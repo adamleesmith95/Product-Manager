@@ -1,0 +1,17 @@
+
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2021", "DOM"],
+    "allowJs": true,                // important if you mix .jsx and .tsx
+    "checkJs": false,               // or true if you want JS type-checking
+    "strict": false,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [],                    // leave empty so all global .d.ts are included
+    "skipLibCheck": true
+  },
+  "include": ["src"],               // ensures src/global.d.ts is picked up
+  "exclude": ["node_modules"]
+}

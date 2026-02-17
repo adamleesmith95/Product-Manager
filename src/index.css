@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+@layer components {
+
+  /* ──────────────────────────
+   * Global 'visual viewport' height for the panes
+   * Change this one value to push the whole surface further down
+   * ────────────────────────── */
+  
+:root {
+    /* Estimate top UI height: tune once */
+    --pm-top-ui: 280px;
+
+    /* pane height = viewport minus top UI */
+    --pm-vh: calc(100vh - var(--pm-top-ui));
+  }
+
+
+
+
+
+  /* ──────────────────────────
+   * Buttons
+   * ────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center
+      rounded-md
+      px-4 py-2
+      text-xs font-medium
+      tracking-tight
+      font-sans
+      shadow-xs
+      shadow-gray-800
+      transition;
+  }
+
+  /* Align icon + label like Angular Material wrapper */
+  .btn > * { /* note: real '>' not &gt; */
+    vertical-align: middle;
+  }
+
+  .btn-light {
+    @apply bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100;
+  }
+
+  .btn-light-disabled {
+    @apply border border-gray-300 bg-gray-200 text-gray-500 cursor-not-allowed;
+  }
+
+  /* ──────────────────────────
+   * Search inputs
+   * ────────────────────────── */
+  .pmsearch {
+    @apply bg-transparent border-0 border-b border-gray-500 rounded-none
+      focus:outline-none focus:ring-0 focus-visible:ring-0
+      focus:border-b-3 focus:border-gray-700
+      placeholder:text-gray-800 transition-all;
+  }
+
+  .pmsearch-button {
+    @apply border rounded-sm border-gray-500 hover:bg-neutral-200
+      focus:outline-none aria-selected:bg-neutral-200 focus:bg-neutral-300
+      disabled:opacity-60;
+  }
+
+  .pmcaret-arrow {
+    @apply border rounded-sm bg-blue-50 text-blue-900 px-1 py-2
+      hover:bg-blue-100 border-l border-blue-600;
+  }
+
+
+
+  /* ──────────────────────────
+   * Shared panes & lists (PHC + Product Component)
+   * ────────────────────────── */
+    
+.pm-section {
+    @apply px-4 pt-4;
+  }
+
+   .pm-pane {
+    @apply rounded bg-white;
+  }
+
+  .pm-pane-header {
+    @apply px-3 py-2 bg-neutral-50 text-sm font-medium
+      flex items-center justify-between gap-3;
+  }
+
+  .pm-pane-title {
+    @apply flex items-center gap-2 shrink-0 text-blue-900;
+  }
+
+  .pm-pane-scroll {
+    @apply overflow-auto max-h-[60vh];
+  }
+
+  
+.pm-section-right {
+  @apply flex items-center col-span-2 justify-end gap-2;
+}
+
+
+  /* Subtle divider (shadowed bottom rule) under search bars */
+  .pm-divider {
+    height: 1px; /* utility not needed here */
+    background-color: #e5e7eb; /* gray-200 */
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+
+  /* Left sidebar list (PHC categories, PC groups/categories) */
+  .pm-sidebar { /* base: use with col-span in markup */
+    @apply rounded bg-white;
+  }
+
+  .pm-sidebar-title {
+    @apply px-3 py-2 bg-neutral-50 text-sm font-medium;
+  }
+
+  /* Sidebar scroll should only scroll vertically, never horizontally */
+ /* Left scroll matches same height */
+  .pm-sidebar-scroll {
+    max-height: var(--pm-vh);
+    @apply overflow-y-auto overflow-x-hidden pr-1;
+  }
+
+
+/* Group header row (caret + label + code) */
+.pm-group-header {
+  @apply flex items-center gap-1 select-none mb-1 px-2; /* was px-3 -> px-2 */
+}
+
+/* Group header label: smaller, no-wrap, ellipsis */
+.pm-group-label {
+  @apply text-neutral-800 font-medium text-[12px] leading-5 whitespace-nowrap overflow-hidden text-ellipsis;
+}
+
+/* Group header code: even smaller, subdued, no-wrap */
+.pm-group-code {
+  @apply ml-2 text-[10px] text-gray-500 whitespace-nowrap;
+}
+
+/* Category list item (we already have pm-list-item-small). Ensure no-wrap + ellipsis. */
+.pm-list-item-small {
+  @apply w-full text-left px-3 py-1 text-xs hover:bg-neutral-50 whitespace-nowrap overflow-hidden text-ellipsis;
+}
+
+/* Indent for categories under a group; reduced a bit to avoid pushing width */
+.pm-cat-indent {
+  @apply ml-5; /* was ml-6; shave 4px total vs previous px to reduce overflow risk */
+}
+
+  .pm-list-item {
+    @apply w-full text-left px-3 py-1 text-sm hover:bg-neutral-50;
+  }
+
+  .pm-list-item--active {
+    @apply bg-blue-50 font-medium;
+  }
+
+  /* Right content */
+  .pm-pane-right { /* no @apply of pm-pane here; compose in markup: class="pm-pane pm-pane-right" */
+    /* Add right-pane-specific tweaks here if you need them later */
+  }
+
+
+  /* Column resizer handle inside <th> */
+  .pm-col-resizer {
+    position: absolute;
+    top: 0;
+    right: -2px;           /* slight overlap so it’s easy to grab */
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    /* visual hint on hover */
+  }
+  .pm-col-resizer:hover::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 2px;
+    width: 1px;
+    height: 100%;
+    background-color: #d1d5db; /* gray-300 */
+  }
+
+  /* When resizing, show a subtle column line */
+  .pm-col-resizing {
+    cursor: col-resize !important;
+  }
+
+
+  /* Tables */
+  .pm-table {
+    @apply min-w-full text-xs text-left;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .pm-thead {
+    @apply bg-neutral-100 text-neutral-700 font-medium;
+  }
+
+  .pm-th {
+    @apply px-3 py-2 border-b border-gray-200 whitespace-nowrap overflow-hidden text-ellipsis;
+  }
+
+  .pm-td {
+    @apply px-3 py-2 border-b border-gray-100 whitespace-nowrap overflow-hidden text-ellipsis;
+  }
+
+  .pm-row {
+    @apply odd:bg-white even:bg-gray-50 hover:bg-neutral-50;
+  }
+
+
+  /* Sticky THEAD (primary) + fallback sticky TH cells */
+  .pm-thead-sticky {
+    position: sticky;
+    top: 0;         /* stick to top of .pm-content */
+    z-index: 5;     /* above body rows and resize handles */
+    background-color: #f3f4f6; /* gray-100 (same as your header bg) */
+  }
+
+  /* Keep each cell opaque and give a bottom hairline to delineate header */
+  .pm-thead-sticky .pm-th {
+    background-color: inherit;
+    position: sticky;          /* secondary stickiness for Safari edge-cases */
+    top: 0;
+    z-index: 6;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05); /* subtle rule under header */
+  }
+
+
+  
+
+
+  /* Make .pm-pane-flex and .pm-content behave correctly */
+  .pm-pane-flex {
+    @apply flex flex-col;
+  }
+  .pm-content {
+    @apply flex-1 min-h-0 overflow-auto;
+    position: relative;
+
+  }
+
+/* Fixed visual height for right panes so footer can anchor reliably */
+
+ /* Right pane height */
+  .pm-pane--vh {
+    height: var(--pm-vh);
+  }
+
+
+
+/* Unified footer placement/padding */
+.pm-pane-footer { @apply mt-3 flex gap-2 justify-end px-3; }
+
+/* (Optional) divider full-bleed helper (you already added) */
+.pm-divider-bleed { margin-left: -1rem; margin-right: -1rem; } /* cancels px-4 if present */
+
+/* Selected row paints all cells (keeps your full-width highlight) */
+.pm-row--selected > td { @apply bg-blue-100; }
+.pm-row--selected:hover > td { @apply bg-blue-100; }
+.pm-row:hover > td { @apply bg-neutral-50; }
+
+
+
+}
