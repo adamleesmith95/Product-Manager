@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import ProductHeaderSearch from "./ProductHeaderSearch";
-import { useTableColumnSizing } from "../hooks/useTableColumnSizing"; // <- added
+import React, { useEffect, useRef, useState } from "react";
+import BrowserLayout from './shared/BrowserLayout';
+import ProductHeaderSearch from './ProductHeaderSearch';
+import DataTable from './shared/DataTable';
+import { ColumnDefinition } from './shared/DataTable';
 
 type Category = {
   code: string;
@@ -18,6 +20,49 @@ type ProductRow = {
   displayOrder: number | string;
   displayCategory: string;
   displayCategoryCode: string;
+  maxQuantity?: number | string;
+  securityLevel?: number | string;
+  priceChangeLevel?: number | string;
+  commission?: string;
+  identifyCustomer?: string;
+  primaryLob?: string;
+  receiptLabel?: string;
+  loyaltyProduct?: string;
+  auditCategory?: string;
+  redemptionProduct?: string;
+  comment?: string;
+  shippingCategoryCode?: string;
+  shippingCategory?: string;
+  specialText?: string;
+  operatorId?: string;
+  updateDate?: string;
+  customerAgeMin?: number | string;
+  customerAgeMax?: number | string;
+  minAdvanceDays?: number | string;
+  maxAdvanceDays?: number | string;
+  salesReportCategoryCode?: string;
+  salesReportCategory?: string;
+  internetAuthorizationCode?: string;
+  internetAuthorization?: string;
+  priceByLocation?: string;
+  priceBySeason?: string;
+  paymentProfileRequired?: string;
+  salesReportGroupCode?: string;
+  salesReportGroup?: string;
+  depositRequired?: string;
+  allowDelivery?: string;
+  pickupLocationTypeCode?: string;
+  pickupLocationType?: string;
+  units?: number | string;
+  unitOfMeasureCode?: string;
+  relationId?: string;
+  autoRenew?: string;
+  displayTitle?: string;
+  internalComment?: string;
+  hideReceiptPrice?: string;
+  currencyCode?: string;
+  priceByPricingRule?: string;
+  priceBySalesChannel?: string;
 };
 
 type SearchFilters = {
@@ -30,12 +75,68 @@ type SearchFilters = {
   advancedQuery: string;
 };
 
-type Props = {
-  onOpenProduct: (row: ProductRow) => void;
+interface DisplayCategoryBrowserProps {
   initialCategoryCode?: string;
-};
+  onOpenProduct: (product: ProductRow) => void;
+}
 
-export default function DisplayCategoryBrowser({ onOpenProduct, initialCategoryCode }: Props) {
+const PRODUCT_COLUMNS: ColumnDefinition<ProductRow>[] = [
+  { key: 'code', label: 'Code', className: 'font-mono', sortable: true, sortType: 'string' },
+  { key: 'description', label: 'Description', sortable: true, sortType: 'string' },
+  { key: 'active', label: 'Active', sortable: true, sortType: 'string' },
+  { key: 'display', label: 'Display', sortable: true, sortType: 'string' },
+  { key: 'displayOrder', label: 'Display Order', sortable: true, sortType: 'string' },
+  { key: 'displayCategoryCode', label: 'Display Category Code', sortable: true, sortType: 'string' },
+  { key: 'displayCategory', label: 'Display Category Description', sortable: true, sortType: 'string' },
+  { key: 'maxQuantity', label: 'Max Qty', sortable: true, sortType: 'number' },
+  { key: 'securityLevel', label: 'Security Level', sortable: true, sortType: 'number' },
+  { key: 'priceChangeLevel', label: 'Price Change', sortable: true, sortType: 'number' },
+  { key: 'commission', label: 'Commission', sortable: true, sortType: 'string' },
+  { key: 'identifyCustomer', label: 'ID Customer', sortable: true, sortType: 'string' },
+  { key: 'primaryLob', label: 'Primary LOB', sortable: true, sortType: 'string' },
+  { key: 'receiptLabel', label: 'Receipt Label', width: 160, sortable: true, sortType: 'string' },
+  { key: 'loyaltyProduct', label: 'Loyalty Product', sortable: true, sortType: 'string' },
+  { key: 'auditCategory', label: 'Audit Category', sortable: true, sortType: 'string' },
+  { key: 'redemptionProduct', label: 'Redemption Product', sortable: true, sortType: 'string' },
+  { key: 'comment', label: 'Comment', width: 160, sortable: true, sortType: 'string' },
+  { key: 'shippingCategoryCode', label: 'Shipping Category Code', sortable: true, sortType: 'string' },
+  { key: 'shippingCategory', label: 'Shipping Category', sortable: true, sortType: 'string' },
+  { key: 'specialText', label: 'Special Text', sortable: true, sortType: 'string' },
+  { key: 'operatorId', label: 'Operator ID', sortable: true, sortType: 'string' },
+  { key: 'updateDate', label: 'Updated', sortable: true, sortType: 'date' },
+  { key: 'customerAgeMin', label: 'Customer Age (Min)', sortable: true, sortType: 'number' },
+  { key: 'customerAgeMax', label: 'Customer Age (Max)', sortable: true, sortType: 'number' },
+  { key: 'minAdvanceDays', label: 'Min Advance Days', sortable: true, sortType: 'number' },
+  { key: 'maxAdvanceDays', label: 'Max Advance Days', sortable: true, sortType: 'number' },
+  { key: 'salesReportCategoryCode', label: 'SalesReportCategoryCode', sortable: true, sortType: 'string' },
+  { key: 'salesReportCategory', label: 'Sales Report Category', sortable: true, sortType: 'string' },
+  { key: 'internetAuthorizationCode', label: 'InternetAuthorizationCode', sortable: true, sortType: 'string' },
+  { key: 'internetAuthorization', label: 'Internet Authorization', sortable: true, sortType: 'string' },
+  { key: 'priceByLocation', label: 'Price By Location', sortable: true, sortType: 'string' },
+  { key: 'priceBySeason', label: 'Price By Season', sortable: true, sortType: 'string' },
+  { key: 'paymentProfileRequired', label: 'Payment Profile Required', sortable: true, sortType: 'string' },
+  { key: 'salesReportGroupCode', label: 'Sales Report Group Code', sortable: true, sortType: 'string' },
+  { key: 'salesReportGroup', label: 'Sales Report Group', sortable: true, sortType: 'string' },
+  { key: 'depositRequired', label: 'Deposit Required', sortable: true, sortType: 'string' },
+  { key: 'allowDelivery', label: 'Allow Delivery', sortable: true, sortType: 'string' },
+  { key: 'pickupLocationTypeCode', label: 'Pickup Location Type Code', sortable: true, sortType: 'string' },
+  { key: 'pickupLocationType', label: 'Pickup Location Type', sortable: true, sortType: 'string' },
+  { key: 'units', label: 'units', sortable: true, sortType: 'number' },
+  { key: 'unitOfMeasureCode', label: 'unit_of_measure_code', sortable: true, sortType: 'string' },
+  { key: 'relationId', label: 'relation_id', sortable: true, sortType: 'string' },
+  { key: 'autoRenew', label: 'Auto Renew', sortable: true, sortType: 'string' },
+  { key: 'displayTitle', label: 'Display Title', width: 160, sortable: true, sortType: 'string' },
+  { key: 'internalComment', label: 'Internal Comment', width: 160, sortable: true, sortType: 'string' },
+  { key: 'hideReceiptPrice', label: 'Hide Receipt Price', sortable: true, sortType: 'string' },
+  { key: 'currencyCode', label: 'Currency Code', sortable: true, sortType: 'string' },
+  { key: 'priceByPricingRule', label: 'Price By Pricing Rule', sortable: true, sortType: 'string' },
+  { key: 'priceBySalesChannel', label: 'Price By Sales Channel', sortable: true, sortType: 'string' },
+];
+
+export default function DisplayCategoryBrowser({ 
+  initialCategoryCode,
+  onOpenProduct 
+}: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
   const [catReloadNonce, setCatReloadNonce] = useState(0);
 
@@ -58,6 +159,11 @@ export default function DisplayCategoryBrowser({ onOpenProduct, initialCategoryC
 
   const scrollRowIntoView = (code: string) => {
     const el = document.getElementById(`phc-row-${code}`);
+    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
+  const scrollCategoryIntoView = (categoryCode: string) => {
+    const el = document.getElementById(`cat-${categoryCode}`);
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
@@ -419,44 +525,16 @@ export default function DisplayCategoryBrowser({ onOpenProduct, initialCategoryC
     ? `${lastCatName} (${lastCatCode})`
     : "Products";
 
-  // ---------- Column sizing hook (PHC) ----------
-  const phcTableRef = useRef<HTMLTableElement | null>(null);
-  const { ColGroup, startResize, autoFitColumn } = useTableColumnSizing(phcTableRef, {
-    storageKey: "phc-table",
-    sampleRows: 300,
-    minPx: 80,
-    maxPx: 520,
-    autoSizeDeps: [rows.length],
-    columnCaps: {
-    0: { min: 80, max: 140 },  // PHC Code column
-  },
-
-  });
-
-  const scrollCategoryIntoView = (categoryCode: string) => {
-  const el = document.getElementById(`cat-${categoryCode}`);
-  el?.scrollIntoView({ block: "center", behavior: "smooth" });
-};
-
-
   return (
-    <div className="flex flex-col gap-4">
-      <ProductHeaderSearch
-        onSearch={handleSearch}
-        onClear={handleClear}
-        onExport={() => console.log("Exporting selected products to Excel")}
-      />
-      <div className="pm-divider my-2 pm-divider-bleed" />
-
-      <div className="grid grid-cols-12 gap-4">
-        {/* Left Pane */}
-        <aside className="pm-sidebar col-span-3">
+    <BrowserLayout
+      sidebar={
+        <>
           <div className="pm-sidebar-title">Display Categories</div>
           <div className="pm-sidebar-scroll">
             {cats.map((c) => (
               <button
                 key={c.code}
-                id={`cat-${c.code}`}            // <-- ADD THIS: makes the item scroll-targetable
+                id={`cat-${c.code}`}
                 onClick={() => handleSelectCategory(c.code)}
                 className={`pm-list-item ${selectedCat === c.code ? "pm-list-item--active" : ""}`}
                 title={`Open ${c.label} (${c.code})`}
@@ -468,130 +546,73 @@ export default function DisplayCategoryBrowser({ onOpenProduct, initialCategoryC
               </button>
             ))}
           </div>
-        </aside>
-
-        {/* Right Pane */}
-        <section className="col-span-9 pm-pane pm-pane-right pm-pane-flex pm-pane--vh">
-          <div className="pm-pane-header">
-            <div className="pm-pane-title">{headerTitle}</div>
-            <div className="flex items-center gap-2 grow justify-end">
-              <input
-                type="text"
-                placeholder="Search Code"
-                value={inlineCode}
-                onChange={(e) => setInlineCode(e.target.value)}
-                className="border rounded px-2 py-1 text-xs w-32"
-                aria-label="Search Code"
-              />
-              <input
-                type="text"
-                placeholder="Search Description"
-                value={inlineDesc}
-                onChange={(e) => setInlineDesc(e.target.value)}
-                className="border rounded px-2 py-1 text-xs w-48"
-                aria-label="Search Description"
-              />
-            </div>
+        </>
+      }
+      searchPanel={
+        <>
+          <ProductHeaderSearch
+            onSearch={handleSearch}
+            onClear={handleClear}
+            onExport={() => console.log("Exporting selected products to Excel")}
+          />
+          <div className="pm-divider-bleed" />
+        </>
+      }
+      paneHeader={
+        <>
+          <div className="pm-pane-title">{headerTitle}</div>
+          <div className="flex items-center gap-2 grow justify-end">
+            <input
+              type="text"
+              placeholder="Search Code"
+              value={inlineCode}
+              onChange={(e) => setInlineCode(e.target.value)}
+              className="border rounded px-2 py-1 text-xs w-32"
+              aria-label="Search Code"
+            />
+            <input
+              type="text"
+              placeholder="Search Description"
+              value={inlineDesc}
+              onChange={(e) => setInlineDesc(e.target.value)}
+              className="border rounded px-2 py-1 text-xs w-48"
+              aria-label="Search Description"
+            />
+            <button
+              onClick={() => {
+                localStorage.removeItem('colw:display-category-browser');
+                window.location.reload();
+              }}
+              className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
+              title="Reset column widths to auto-fit content"
+            >
+              Reset Columns
+            </button>
           </div>
-
-          <div className="pm-content">
-            <table className="pm-table" ref={phcTableRef}>
-              {ColGroup}
-              <thead className="pm-thead pm-thead-sticky">
-                <tr>
-                  <th className="pm-th relative">
-                    Code
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 0)}
-                      onDoubleClick={() => autoFitColumn(0)}
-                    />
-                  </th>
-                  <th className="pm-th relative">
-                    Description
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 1)}
-                      onDoubleClick={() => autoFitColumn(1)}
-                    />
-                  </th>
-                  <th className="pm-th relative">
-                    Active
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 2)}
-                      onDoubleClick={() => autoFitColumn(2)}
-                    />
-                  </th>
-                  <th className="pm-th relative">
-                    Display
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 3)}
-                      onDoubleClick={() => autoFitColumn(3)}
-                    />
-                  </th>
-                  <th className="pm-th relative">
-                    Display Category Code
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 4)}
-                      onDoubleClick={() => autoFitColumn(4)}
-                    />
-                  </th>
-                  <th className="pm-th relative">
-                    Display Category Description
-                    <span
-                      className="pm-col-resizer"
-                      onMouseDown={(e) => startResize(e, 5)}
-                      onDoubleClick={() => autoFitColumn(5)}
-                    />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr
-                    key={row.code}
-                    id={`phc-row-${row.code}`}
-                    className={`cursor-pointer select-none pm-row ${
-                      row.code === selectedPhcCode ? "pm-row--selected" : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedPhcCode(row.code);
-                    }}
-                    onDoubleClick={() => {
-                      setSelectedPhcCode(null);
-                      onOpenProduct(row);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        setSelectedPhcCode(null);
-                        onOpenProduct(row);
-                      }
-                    }}
-                    title={`Open ${row.code}`}
-                  >
-                    <td className="pm-td font-mono">{row.code}</td>
-                    <td className="pm-td">{row.description}</td>
-                    <td className="pm-td">{row.active}</td>
-                    <td className="pm-td">{row.display}</td>
-                    <td className="pm-td">{row.displayCategoryCode}</td>
-                    <td className="pm-td">{row.displayCategory}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="pm-pane-footer">
-            <button className="btn btn-light">New</button>
-            <button className="btn btn-light">Clone</button>
-          </div>
-        </section>
-      </div>
-    </div>
+        </>
+      }
+      table={
+        <DataTable
+          columns={PRODUCT_COLUMNS}
+          data={rows}
+          rowKey="code"
+          storageKey="display-category-browser"
+          selectedRowKey={selectedPhcCode}
+          onRowClick={(row) => setSelectedPhcCode(row.code)}
+          onRowDoubleClick={(row) => {
+            setSelectedPhcCode(null);
+            onOpenProduct(row);
+          }}
+          emptyMessage={isResultsMode ? searchTitle : 'No products found'}
+          loading={loading}
+        />
+      }
+      paneFooter={
+        <>
+          <button className="btn btn-light">New</button>
+          <button className="btn btn-light">Clone</button>
+        </>
+      }
+    />
   );
 }

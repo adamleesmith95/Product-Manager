@@ -72,8 +72,10 @@ if (connectionString) {
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const componentsRoutes = require('./routes/components.cjs');
 app.use(cors()); // dev only
 app.use(express.json());
+app.use('/api', componentsRoutes);
 
 /** Connection pool */
 const pool = new sql.ConnectionPool(poolConfig);

@@ -194,20 +194,63 @@
   /* Tables */
   .pm-table {
     @apply min-w-full text-xs text-left;
-    border-collapse: separate;
+    border-collapse: separate !important;
     border-spacing: 0;
+    /* REMOVE: table-layout: fixed !important; */
+    width: 100% !important;
+  }
+
+  /* Apply fixed layout only when colgroup exists (after sizing) */
+  .pm-table:has(colgroup) {
+    table-layout: fixed !important;
+  }
+
+  .pm-table colgroup col {
+    /* Force column widths to be respected */
+    min-width: 0 !important;
+  }
+
+  .pm-table .pm-th,
+  .pm-table .pm-td {
+    /* Force cells to respect column widths and truncate */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 0 !important; /* This forces truncation */
+    padding: 0.5rem !important;
+    box-sizing: border-box !important;
   }
 
   .pm-thead {
     @apply bg-neutral-100 text-neutral-700 font-medium;
   }
 
-  .pm-th {
+  /* .pm-th {
     @apply px-3 py-2 border-b border-gray-200 whitespace-nowrap overflow-hidden text-ellipsis;
+  } */
+
+  .pm-th {
+    @apply sticky top-0 z-10 bg-white text-left font-semibold uppercase tracking-wide;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    border-right: 1px solid #d1d5db; /* Gray divider between column headers */
   }
 
+  /* Remove border from last header column */
+  .pm-th:last-child {
+    border-right: none;
+  }
+
+  /* Table body cells - NO border-right */
   .pm-td {
-    @apply px-3 py-2 border-b border-gray-100 whitespace-nowrap overflow-hidden text-ellipsis;
+    @apply bg-white;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    /* NO border-right here */
+  }
+
+  .pm-td:last-child {
+    border-right: none;
   }
 
   .pm-row {

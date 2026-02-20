@@ -23,7 +23,7 @@ router.get('/components/tree', async (req, res, next) => {
           sp.active_ind          AS component_active,
           sp.display_ind         AS component_display,
           sp.units              AS component_units,
-          sp.sale_units         AS component_sale_units,
+          NULL                  AS component_sale_units,
           sp.sales_statistic_code AS component_sales_statistic_code,
           sp.product_profile_type_code AS component_product_profile_type_code
       FROM s_product_group spg
