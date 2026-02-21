@@ -1,4 +1,3 @@
-
 /* eslint-disable no-console */
 const fs = require('fs');
 const path = require('path');
@@ -73,6 +72,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const componentsRoutes = require('./routes/components.cjs');
+const productsRoutes = require('./routes/products.cjs');
 app.use(cors()); // dev only
 app.use(express.json());
 app.use('/api', componentsRoutes);
@@ -468,106 +468,6 @@ ORDER BY [Display Order]
 OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
 `;
 
-
-/** -------------------------------------------
- * Product Components: Available Components (Tree)
- * GET /api/components/tree
- * ------------------------------------------- */
-app.get('/api/components/tree', async (_req, res) => {
-  await poolConnect;
-  try {
-    const result = await pool.request().query(`
-      SELECT
-          spg.product_group_code,
-          spg.description        AS product_group_desc,
-          spg.display_order      AS product_group_order,
-
-          spc.product_category_code,
-          spc.description        AS product_category_desc,
-          spc.display_order      AS product_category_order,
-
-          sp.product_code        AS component_code,
-          sp.description         AS component_desc,
-          sp.display_order       AS component_order
-      FROM s_product_group spg
-      JOIN s_product_category spc
-          ON spg.product_group_code = spc.product_group_code
-         AND spg.active_ind = 'Y'
-         AND spc.active_ind = 'Y'
-      JOIN s_product sp
-          ON spc.product_category_code = sp.product_category_code
-         AND sp.active_ind = 'Y'
-         AND sp.display_ind = 'Y'
-      ORDER BY
-          spg.display_order,
-          spg.product_group_code,
-          spg.description,
-          spc.display_order,
-          spc.product_category_code,
-          spc.description,
-          sp.display_order,
-          sp.product_code,
-          sp.description;
-    `);
-
-    const rows = result.recordset;
-
-    // Shape to hierarchical JSON the UI expects:
-    // [{ groupCode, label, order, categories: [{ categoryCode, label, order, components: [{code,label,order}] }] }]
-    const groupMap = new Map();
-    for (const r of rows) {
-      let g = groupMap.get(r.product_group_code);
-      if (!g) {
-        g = {
-          groupCode: r.product_group_code,
-          label: r.product_group_desc,
-          order: r.product_group_order,
-          categories: [],
-          _catMap: new Map(),
-        };
-        groupMap.set(r.product_group_code, g);
-      }
-
-      let c = g._catMap.get(r.product_category_code);
-      if (!c) {
-        c = {
-          categoryCode: r.product_category_code,
-          label: r.product_category_desc,
-          order: r.product_category_order,
-          components: [],
-        };
-        g._catMap.set(r.product_category_code, c);
-        g.categories.push(c);
-      }
-
-      c.components.push({
-        code: r.component_code,
-        label: r.component_desc,
-        order: r.component_order,
-        active_ind: r.component_active,
-        display_ind: r.component_display,
-        
-
-        units: r.component_units,
-        sale_units: r.component_sale_units,
-        sales_statistic_code: r.component_sales_statistic_code,
-        product_profile_type_code: r.component_product_profile_type_code
-
-
-      });
-    }
-
-    const tree = Array.from(groupMap.values()).map(g => {
-      delete g._catMap;
-      return g;
-    });
-
-    res.json(tree);
-  } catch (err) {
-    console.error('DB_ERROR (/api/components/tree):', err);
-    res.status(500).json({ error: 'DB_ERROR', detail: err.message });
-  }
-});
 
 /** -------------------------------------------
  * Product Components: Assigned to a Product PHC

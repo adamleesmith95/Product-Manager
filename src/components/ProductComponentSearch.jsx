@@ -3,15 +3,67 @@ import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 
 const COMPONENT_COLUMNS = [
-  { key: 'code', label: 'PC', className: 'font-mono', sortable: true, sortType: 'string' },
-  { key: 'label', label: 'Description', sortable: true, sortType: 'string' },
-  { key: 'order', label: 'Display Order', sortable: true, sortType: 'number' },
-  { key: 'active_ind', label: 'Active', sortable: true, sortType: 'string' },
-  { key: 'display_ind', label: 'Display', sortable: true, sortType: 'string' },
-  { key: 'units', label: 'Units', sortable: true, sortType: 'string' },
-  { key: 'sale_units', label: 'Sale Units', sortable: true, sortType: 'string' },
-  { key: 'sales_statistic_code', label: 'Sales Stat Code', sortable: true, sortType: 'string' },
-  { key: 'product_profile_type_code', label: 'Profile Type', sortable: true, sortType: 'string' },
+  { key: 'code', label: 'Code' },
+  { key: 'label', label: 'Description' },
+  { key: 'active_ind', label: 'Active' },
+  { key: 'display_ind', label: 'Display' },
+  { key: 'order', label: 'Display Order' },
+  { key: 'product_category_code', label: 'Product Category Code' },
+  { key: 'label', label: 'Product Category' },
+  { key: 'product_profile_type_code', label: 'Product Profile Type Code' },
+  { key: 'product_profile_type', label: 'Product Profile Type' },
+  { key: 'deferral_pattern_code', label: 'Deferral Pattern Code' },
+  { key: 'deferral_pattern', label: 'Deferral Pattern' },
+
+  { key: 'units', label: 'Units' },
+  { key: 'revenue_report_ind', label: 'Report Revenue' },
+  { key: 'change_revenue_location_ind', label: 'Change Revenue Location' },
+  { key: 'sale_units', label: 'Sale Units' },
+ 
+  
+  { key: 'inventory_pool_code', label: 'Inventory Pool Code' },
+  { key: 'inventory_pool', label: 'Inventory Pool' },
+  { key: 'offline_freesell_ind', label: 'Offline Freesell' },
+  { key: 'sales_statistic_code', label: 'Sales Statistic Code' },
+  { key: 'sales_statistic', label: 'Sales Statistic' },
+
+  { key: 'roster_code', label: 'Roster Code' },
+  { key: 'roster', label: 'Roster' },
+  { key: 'lift_product_type_code', label: 'Lift Product Type Code' },
+  { key: 'lift_product_type', label: 'Lift Product Type' },
+  // Add these to COMPONENT_COLUMNS array:
+
+  { key: 'scan_process_order_code', label: 'Scan Process Order Code' },
+  { key: 'scan_process_order', label: 'Scan Process Order' },
+  { key: 'lift_scan_type_code', label: 'Lift Scan Type Code' },
+  { key: 'lift_scan_type', label: 'Lift Scan Type' },
+  { key: 'lift_charge_ind', label: 'Lift Charging' },
+  { key: 'load_to_media_ind', label: 'Load To Media' },
+  { key: 'lift_effective_date', label: 'Lift Effective Date' },
+  { key: 'lift_expiration_type', label: 'Lift Expiration Type' },
+  { key: 'lift_expiration_days', label: 'Lift Expiration Days' },
+  { key: 'lift_expiration_date', label: 'Lift Expiration Date' },
+  
+  { key: 'lesson_product_type_code', label: 'Lesson Product Type Code' },
+  { key: 'lesson_product_type', label: 'Lesson Product Type' },
+  { key: 'lesson_discipline_code', label: 'Lesson Discipline Code' },
+  { key: 'lesson_discipline', label: 'Lesson Discipline' },
+  { key: 'instructor_activity_code', label: 'Instructor Activity Code' },
+  { key: 'instructor_activity', label: 'Instructor Activity' },
+  { key: 'schedule_instructor', label: 'Schedule Instructor' },
+  
+  { key: 'pass_product_type_code', label: 'Pass Product Type Code' },
+  { key: 'pass_product_type', label: 'Pass Product Type' },
+  { key: 'pass_media_type_code', label: 'Pass Media Type Code' },
+  { key: 'pass_media_type', label: 'Pass Media Type' },
+  
+  { key: 'deferral_calendar_code', label: 'Deferral Calendar Code' },
+  { key: 'deferral_calendar', label: 'Deferral Calendar' },
+  { key: 'customer_property_set_code', label: 'Customer Property Set Code' },
+  { key: 'customer_property_set', label: 'Customer Property Set' },
+
+  { key: 'operator_id', label: 'Operator ID' },
+  { key: 'update_date', label: 'Updated' },
 ];
 
 export default function ProductComponentSearch() {
@@ -56,6 +108,7 @@ export default function ProductComponentSearch() {
         
         setTree(list);
 
+        // Auto-expand + select (UI setup work)
         if (list.length > 0) {
           const firstGroup = list[0];
           const next = new Set();
@@ -64,14 +117,28 @@ export default function ProductComponentSearch() {
           const firstCat = (firstGroup.categories ?? [])[0];
           if (firstCat) {
             setSelectedCategory(String(firstCat.categoryCode));
-            requestAnimationFrame(() => scrollCategoryIntoView(String(firstCat.categoryCode)));
+            
+            // Wait for React to render, then scroll, THEN hide spinner
+            requestAnimationFrame(() => {
+              scrollCategoryIntoView(String(firstCat.categoryCode));
+              
+              // Give DOM time to paint (500ms = smooth UX)
+              setTimeout(() => {
+                if (alive) setLoading(false);
+              }, 500);
+            });
+          } else {
+            // No categories, just hide spinner
+            setLoading(false);
           }
+        } else {
+          // Empty tree
+          setLoading(false);
         }
       } catch (err) {
         console.error('[PC Search] tree load failed', err);
         setTree([]);
-      } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
