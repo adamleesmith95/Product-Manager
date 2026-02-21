@@ -44,7 +44,7 @@ export default function DataTable<T extends Record<string, any>>({
   emptyMessage = 'No data available',
   className = '',
   defaultSort,
-  loading = true,  // ADD THIS with default
+  loading = false,  // ADD THIS with default
 }: DataTableProps<T>) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
@@ -167,14 +167,6 @@ export default function DataTable<T extends Record<string, any>>({
         </tr>
       </thead>
       <tbody>
-        {loading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
-            <div className="flex flex-col items-center gap-3">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="text-gray-600 font-medium">Loading data...</p>
-            </div>
-          </div>
-        )}
         {sortedData.length === 0 ? (
           <tr>
             <td colSpan={columns.length} className="pm-td text-sm text-gray-500">
