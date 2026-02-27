@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
+import { useDataCache } from '../context/DataCacheContext';
 
 const COMPONENT_COLUMNS = [
   { key: 'code', label: 'Code' },
@@ -89,17 +90,26 @@ export default function ProductComponentSearch() {
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
+  const { cache, setCache } = useDataCache();
+
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
+        // ✅ Check cache FIRST
+        if (cache.pcTree) {
+          console.log('[PC] Using cached tree');
+          setTree(cache.pcTree);
+          return; // Skip fetch entirely
+        }
+
         setLoading(true);
         const res = await fetch('/api/components/tree');
         const json = await res.json();
         if (!alive) return;
+        
         const list = Array.isArray(json) ? json : [];
         
-        // ADD THIS LOGGING
         if (list.length > 0 && list[0].categories?.length > 0) {
           const firstComp = list[0].categories[0].components?.[0];
           console.log('[PC Search] First component data:', firstComp);
@@ -107,42 +117,17 @@ export default function ProductComponentSearch() {
         }
         
         setTree(list);
-
-        // Auto-expand + select (UI setup work)
-        if (list.length > 0) {
-          const firstGroup = list[0];
-          const next = new Set();
-          next.add(firstGroup.groupCode);
-          setExpandedGroups(next);
-          const firstCat = (firstGroup.categories ?? [])[0];
-          if (firstCat) {
-            setSelectedCategory(String(firstCat.categoryCode));
-            
-            // Wait for React to render, then scroll, THEN hide spinner
-            requestAnimationFrame(() => {
-              scrollCategoryIntoView(String(firstCat.categoryCode));
-              
-              // Give DOM time to paint (500ms = smooth UX)
-              setTimeout(() => {
-                if (alive) setLoading(false);
-              }, 500);
-            });
-          } else {
-            // No categories, just hide spinner
-            setLoading(false);
-          }
-        } else {
-          // Empty tree
-          setLoading(false);
-        }
+        setCache('pcTree', list); // ✅ Save to cache
+        
       } catch (err) {
         console.error('[PC Search] tree load failed', err);
         setTree([]);
+      } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [cache, setCache]); // ✅ Add dependencies
 
   function toggleGroup(code) {
     setExpandedGroups(prev => {

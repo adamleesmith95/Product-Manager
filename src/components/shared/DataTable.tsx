@@ -133,77 +133,87 @@ export default function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <table className={`pm-table ${className}`} ref={tableRef}>
-      {/* Remove the style prop entirely - let CSS handle table-layout */}
-      {ColGroup}
-      <thead className="pm-thead pm-thead-sticky">
-        <tr>
-          {columns.map((col, idx) => {
-            if (!col || !col.key) return null;
-            
-            return (
-              <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`}>
-                <div
-                  className="cursor-pointer select-none"
-                  onClick={() => handleSort(col.key)}
-                >
-                  <span>{col.label}</span>
-                  {col.sortable && sortConfig?.key === String(col.key) && (
-                    <span className="ml-1">
-                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Column resizer */}
-                <span
-                  className="pm-col-resizer"
-                  onMouseDown={(e) => startResize(e, idx)}
-                  onDoubleClick={() => autoFitColumn(idx)}
-                />
-              </th>
-            );
-          })}
-        </tr>
-      </thead>
-      <tbody>
-        {sortedData.length === 0 ? (
+    <div className="relative" aria-busy={loading}>
+      <table className={`pm-table ${className}`} ref={tableRef}>
+        {/* Remove the style prop entirely - let CSS handle table-layout */}
+        {ColGroup}
+        <thead className="pm-thead pm-thead-sticky">
           <tr>
-            <td colSpan={columns.length} className="pm-td text-sm text-gray-500">
-              {emptyMessage}
-            </td>
+            {columns.map((col, idx) => {
+              if (!col || !col.key) return null;
+              
+              return (
+                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`}>
+                  <div
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort(col.key)}
+                  >
+                    <span>{col.label}</span>
+                    {col.sortable && sortConfig?.key === String(col.key) && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Column resizer */}
+                  <span
+                    className="pm-col-resizer"
+                    onMouseDown={(e) => startResize(e, idx)}
+                    onDoubleClick={() => autoFitColumn(idx)}
+                  />
+                </th>
+              );
+            })}
           </tr>
-        ) : (
-          sortedData.map((row) => {
-            const key = String(row[rowKey]);
-            const isSelected = selectedRowKey !== null && String(selectedRowKey) === key;
+        </thead>
+        <tbody>
+          {sortedData.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length} className="pm-td text-sm text-gray-500">
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : (
+            sortedData.map((row) => {
+              const key = String(row[rowKey]);
+              const isSelected = selectedRowKey !== null && String(selectedRowKey) === key;
 
-            return (
-              <tr
-                key={key}
-                id={`row-${key}`}
-                className={`pm-row ${isSelected ? 'pm-row--selected' : ''} ${
-                  onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
-                }`}
-                onClick={() => onRowClick?.(row)}
-                onDoubleClick={() => onRowDoubleClick?.(row)}
-              >
-                {columns.map((col) => {
-                  const value = row[col.key];
-                  const alignClass = col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
-                  const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
+              return (
+                <tr
+                  key={key}
+                  id={`row-${key}`}
+                  className={`pm-row ${isSelected ? 'pm-row--selected' : ''} ${
+                    onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
+                  }`}
+                  onClick={() => onRowClick?.(row)}
+                  onDoubleClick={() => onRowDoubleClick?.(row)}
+                >
+                  {columns.map((col) => {
+                    const value = row[col.key];
+                    const alignClass = col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
+                    const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
 
-                  return (
-                    <td key={String(col.key)} className={cellClassName}>
-                      {col.render ? col.render(value, row) : value ?? ''}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })
-        )}
-      </tbody>
-    </table>
+                    return (
+                      <td key={String(col.key)} className={cellClassName}>
+                        {col.render ? col.render(value, row) : value ?? ''}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+      {loading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 font-medium">Loading data...</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
