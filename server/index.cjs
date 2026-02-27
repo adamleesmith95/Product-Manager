@@ -73,9 +73,13 @@ const cors = require('cors');
 const app = express();
 const componentsRoutes = require('./routes/components.cjs');
 const productsRoutes = require('./routes/products.cjs');
+const displayCategoriesRoutes = require('./routes/displayCategories.cjs'); // ADD
 app.use(cors()); // dev only
 app.use(express.json());
+
 app.use('/api', componentsRoutes);
+app.use('/api', productsRoutes);
+app.use('/api', displayCategoriesRoutes); // ADD
 
 /** Connection pool */
 const pool = new sql.ConnectionPool(poolConfig);
