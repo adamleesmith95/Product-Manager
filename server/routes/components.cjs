@@ -191,7 +191,7 @@ router.get('/components/tree', async (req, res, next) => {
         active_ind: r.component_active,
         display_ind: r.component_display,
         product_category_code: r.product_category_code,
-         
+         product_category_desc: r.product_category_desc,
         product_profile_type_code: r.component_product_profile_type_code,
         product_profile_type: r.component_product_profile_type,
         deferral_pattern_code: r.component_deferral_pattern_code,
