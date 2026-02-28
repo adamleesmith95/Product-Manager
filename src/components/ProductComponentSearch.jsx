@@ -10,7 +10,7 @@ const COMPONENT_COLUMNS = [
   { key: 'display_ind', label: 'Display' },
   { key: 'order', label: 'Display Order' },
   { key: 'product_category_code', label: 'Product Category Code' },
-  { key: 'label', label: 'Product Category' },
+  { key: 'product_category_desc', label: 'Product Category' },
   { key: 'product_profile_type_code', label: 'Product Profile Type Code' },
   { key: 'product_profile_type', label: 'Product Profile Type' },
   { key: 'deferral_pattern_code', label: 'Deferral Pattern Code' },
@@ -396,6 +396,7 @@ export default function ProductComponentSearch() {
           data={tableRows}
           rowKey="code"
           storageKey="product-component-search"
+          loading={loading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row) => setSelectedCompCode(row.code)}
           onRowDoubleClick={(row) => {
@@ -405,14 +406,14 @@ export default function ProductComponentSearch() {
           }}
           emptyMessage={
             !isResultsMode && !selectedCatObj
-              ? 'Select a category to view components.'
+              ? '← Select a category to view components.'
               : !isResultsMode && selectedCatObj && filteredComponents.length === 0
               ? 'No components match your filters.'
               : isResultsMode && tableRows.length === 0
               ? searchTitle || 'Results (0)'
               : 'No components found'
           }
-          loading={loading}
+          
         />
       }
       paneFooter={

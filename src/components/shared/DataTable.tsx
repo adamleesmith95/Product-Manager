@@ -20,6 +20,7 @@ type SortConfig = {
 } | null;
 
 type DataTableProps<T> = {
+  
   columns: ColumnDefinition<T>[];
   data: T[];
   rowKey: keyof T;
@@ -31,20 +32,25 @@ type DataTableProps<T> = {
   className?: string;
   defaultSort?: { key: keyof T; direction: 'asc' | 'desc' };
   loading?: boolean;
+  stickyHeader?: boolean;
+  maxHeight?: number;
+  
 };
 
 export default function DataTable<T extends Record<string, any>>({
   columns,
   data,
-  rowKey,
-  storageKey,
+  rowKey = 'id' as keyof T,  // ✅ Default to 'id'
+  storageKey = 'defaultTable',  // ✅ Default storage key
+  loading = false,
+  emptyMessage = 'No results found',
+  stickyHeader = false,
+  maxHeight,
   onRowClick,
   onRowDoubleClick,
-  selectedRowKey,
-  emptyMessage = 'No data available',
+  selectedRowKey = null,
   className = '',
   defaultSort,
-  loading = false,  // ADD THIS with default
 }: DataTableProps<T>) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
