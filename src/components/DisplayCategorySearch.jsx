@@ -2,17 +2,22 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
+import SearchToolbar from './shared/SearchToolbar';
+import PaneHeader from './shared/PaneHeader';
+import PaneActions from './shared/PaneActions';
 
 const DISPLAY_CATEGORY_COLUMNS = [
-  { key: 'code', label: 'Code', sortable: true, sortType: 'string', width: '120px' },
-  { key: 'label', label: 'Description', sortable: true, sortType: 'string', width: '300px' },
-  { key: 'displayGroupCode', label: 'Display Group Code', sortable: true, sortType: 'string', width: '150px' },
-  { key: 'displayGroup', label: 'Display Group', sortable: true, sortType: 'string', width: '200px' },
-  { key: 'active', label: 'Active', sortable: true, sortType: 'string', width: '80px' },
-  { key: 'order', label: 'Display Order', sortable: true, sortType: 'number', width: '120px' },
-  { key: 'operatorId', label: 'Operator ID', sortable: true, sortType: 'string', width: '120px' },
-  { key: 'updated', label: 'Updated', sortable: true, sortType: 'string', width: '100px' },
+  { key: 'code', label: 'Code', sortable: true, sortType: 'string' },
+  { key: 'label', label: 'Description', sortable: true, sortType: 'string' },
+  { key: 'displayGroupCode', label: 'Display Group Code', sortable: true, sortType: 'string' },
+  { key: 'displayGroup', label: 'Display Group', sortable: true, sortType: 'string' },
+  { key: 'active', label: 'Active', sortable: true, sortType: 'string' },
+  { key: 'order', label: 'Display Order', sortable: true, sortType: 'number' },
+  { key: 'operatorId', label: 'Operator ID', sortable: true, sortType: 'string' },
+  { key: 'updated', label: 'Updated', sortable: true, sortType: 'string' },
 ];
+
+const TABLE_STORAGE_KEY = 'display-category-search';
 
 export default function DisplayCategorySearch() {
   const { cache, setCache } = useDataCache();
@@ -177,7 +182,7 @@ export default function DisplayCategorySearch() {
       : 'Choose a display group';
 
   const handleResetColumns = () => {
-    localStorage.removeItem('colw:displayCategoryTable');
+    localStorage.removeItem(`colw:${TABLE_STORAGE_KEY}`);
     window.location.reload();
   };
 
@@ -221,54 +226,41 @@ export default function DisplayCategorySearch() {
         </>
       }
       searchPanel={
-        <>
-          <div className="pm-section grid grid-cols-12 gap-4 items-center">
-            <input
-              type="text"
-              name="code"
-              placeholder="Display Category Code"
-              value={filters.code}
-              onChange={handleChange}
-              onKeyDown={onKeyDownBasic}
-              className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
-            />
-            <input
-              type="text"
-              name="description"
-              placeholder="Description"
-              value={filters.description}
-              onChange={handleChange}
-              onKeyDown={onKeyDownBasic}
-              className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
-            />
-            <div className="pm-section-right">
-              <button onClick={handleSearch} className="btn btn-light">Search</button>
-              <button onClick={handleClear} className="btn btn-light">Clear</button>
-            </div>
-          </div>
-          <div className="pm-divider-bleed" />
-        </>
+        <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+          <input
+            type="text"
+            name="code"
+            placeholder="Display Category Code"
+            value={filters.code}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+          />
+          <input
+            type="text"
+            name="description"
+            placeholder="Description"
+            value={filters.description}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+          />
+        </SearchToolbar>
       }
       paneHeader={
-        <>
-          <div className="pm-pane-title">{headerTitle}</div>
-          <div className="flex items-center gap-2 grow justify-end">
-            <button
-              onClick={handleResetColumns}
-              className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
-              title="Reset column widths"
-            >
-              Reset Columns
-            </button>
-          </div>
-        </>
+        <PaneHeader
+          title={headerTitle}
+          onResetColumns={handleResetColumns}
+        />
       }
       table={
         <DataTable
           columns={DISPLAY_CATEGORY_COLUMNS}
           data={tableRows}
           rowKey="code"
-          storageKey="displayCategoryTable"
+          storageKey={TABLE_STORAGE_KEY}
+          autoSizeDeps={[selectedGroupCode, isResultsMode, searchTitle]}
+          selectedRowKey={selectedCategoryCode}
           loading={loading}
           emptyMessage={
             !isResultsMode && !selectedGroupObj
@@ -279,15 +271,9 @@ export default function DisplayCategorySearch() {
               ? searchTitle || 'Results (0)'
               : 'No categories found'
           }
-          selectedRowKey={selectedCategoryCode}
         />
       }
-      paneFooter={
-        <div className="flex items-center gap-2">
-          <button className="btn btn-light">New</button>
-          <button className="btn btn-light">Clone</button>
-        </div>
-      }
+      paneFooter={<PaneActions />}
     />
   );
 }

@@ -2,70 +2,75 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
+import SearchToolbar from './shared/SearchToolbar';
+import PaneHeader from './shared/PaneHeader';
+import PaneActions from './shared/PaneActions';
 
 const COMPONENT_COLUMNS = [
-  { key: 'code', label: 'Code' },
-  { key: 'label', label: 'Description' },
-  { key: 'active_ind', label: 'Active' },
-  { key: 'display_ind', label: 'Display' },
-  { key: 'order', label: 'Display Order' },
-  { key: 'product_category_code', label: 'Product Category Code' },
-  { key: 'product_category_desc', label: 'Product Category' },
-  { key: 'product_profile_type_code', label: 'Product Profile Type Code' },
-  { key: 'product_profile_type', label: 'Product Profile Type' },
-  { key: 'deferral_pattern_code', label: 'Deferral Pattern Code' },
-  { key: 'deferral_pattern', label: 'Deferral Pattern' },
+  { key: 'code', label: 'Code', sortable: true },
+  { key: 'label', label: 'Description', sortable: true },
+  { key: 'active_ind', label: 'Active', sortable: true },
+  { key: 'display_ind', label: 'Display', sortable: true },
+  { key: 'order', label: 'Display Order', sortable: true },
+  { key: 'product_category_code', label: 'Product Category Code', sortable: true },
+  { key: 'product_category_desc', label: 'Product Category', sortable: true },
+  { key: 'product_profile_type_code', label: 'Product Profile Type Code', sortable: true },
+  { key: 'product_profile_type', label: 'Product Profile Type', sortable: true },
+  { key: 'deferral_pattern_code', label: 'Deferral Pattern Code', sortable: true },
+  { key: 'deferral_pattern', label: 'Deferral Pattern', sortable: true },
 
-  { key: 'units', label: 'Units' },
-  { key: 'revenue_report_ind', label: 'Report Revenue' },
-  { key: 'change_revenue_location_ind', label: 'Change Revenue Location' },
-  { key: 'sale_units', label: 'Sale Units' },
+  { key: 'units', label: 'Units', sortable: true },
+  { key: 'revenue_report_ind', label: 'Report Revenue', sortable: true },
+  { key: 'change_revenue_location_ind', label: 'Change Revenue Location', sortable: true },
+  { key: 'sale_units', label: 'Sale Units', sortable: true },
  
   
-  { key: 'inventory_pool_code', label: 'Inventory Pool Code' },
-  { key: 'inventory_pool', label: 'Inventory Pool' },
-  { key: 'offline_freesell_ind', label: 'Offline Freesell' },
-  { key: 'sales_statistic_code', label: 'Sales Statistic Code' },
-  { key: 'sales_statistic', label: 'Sales Statistic' },
+  { key: 'inventory_pool_code', label: 'Inventory Pool Code', sortable: true },
+  { key: 'inventory_pool', label: 'Inventory Pool', sortable: true },
+  { key: 'offline_freesell_ind', label: 'Offline Freesell', sortable: true },
+  { key: 'sales_statistic_code', label: 'Sales Statistic Code', sortable: true },
+  { key: 'sales_statistic', label: 'Sales Statistic', sortable: true },
 
-  { key: 'roster_code', label: 'Roster Code' },
-  { key: 'roster', label: 'Roster' },
-  { key: 'lift_product_type_code', label: 'Lift Product Type Code' },
-  { key: 'lift_product_type', label: 'Lift Product Type' },
+  { key: 'roster_code', label: 'Roster Code', sortable: true },
+  { key: 'roster', label: 'Roster', sortable: true },
+  { key: 'lift_product_type_code', label: 'Lift Product Type Code', sortable: true },
+  { key: 'lift_product_type', label: 'Lift Product Type', sortable: true },
   // Add these to COMPONENT_COLUMNS array:
 
-  { key: 'scan_process_order_code', label: 'Scan Process Order Code' },
-  { key: 'scan_process_order', label: 'Scan Process Order' },
-  { key: 'lift_scan_type_code', label: 'Lift Scan Type Code' },
-  { key: 'lift_scan_type', label: 'Lift Scan Type' },
-  { key: 'lift_charge_ind', label: 'Lift Charging' },
-  { key: 'load_to_media_ind', label: 'Load To Media' },
-  { key: 'lift_effective_date', label: 'Lift Effective Date' },
-  { key: 'lift_expiration_type', label: 'Lift Expiration Type' },
-  { key: 'lift_expiration_days', label: 'Lift Expiration Days' },
-  { key: 'lift_expiration_date', label: 'Lift Expiration Date' },
+  { key: 'scan_process_order_code', label: 'Scan Process Order Code', sortable: true },
+  { key: 'scan_process_order', label: 'Scan Process Order', sortable: true },
+  { key: 'lift_scan_type_code', label: 'Lift Scan Type Code', sortable: true },
+  { key: 'lift_scan_type', label: 'Lift Scan Type', sortable: true },
+  { key: 'lift_charge_ind', label: 'Lift Charging', sortable: true },
+  { key: 'load_to_media_ind', label: 'Load To Media', sortable: true },
+  { key: 'lift_effective_date', label: 'Lift Effective Date', sortable: true },
+  { key: 'lift_expiration_type', label: 'Lift Expiration Type', sortable: true },
+  { key: 'lift_expiration_days', label: 'Lift Expiration Days', sortable: true },
+  { key: 'lift_expiration_date', label: 'Lift Expiration Date', sortable: true },
   
-  { key: 'lesson_product_type_code', label: 'Lesson Product Type Code' },
-  { key: 'lesson_product_type', label: 'Lesson Product Type' },
-  { key: 'lesson_discipline_code', label: 'Lesson Discipline Code' },
-  { key: 'lesson_discipline', label: 'Lesson Discipline' },
-  { key: 'instructor_activity_code', label: 'Instructor Activity Code' },
-  { key: 'instructor_activity', label: 'Instructor Activity' },
-  { key: 'schedule_instructor', label: 'Schedule Instructor' },
+  { key: 'lesson_product_type_code', label: 'Lesson Product Type Code', sortable: true },
+  { key: 'lesson_product_type', label: 'Lesson Product Type', sortable: true },
+  { key: 'lesson_discipline_code', label: 'Lesson Discipline Code', sortable: true },
+  { key: 'lesson_discipline', label: 'Lesson Discipline', sortable: true },
+  { key: 'instructor_activity_code', label: 'Instructor Activity Code', sortable: true },
+  { key: 'instructor_activity', label: 'Instructor Activity', sortable: true },
+  { key: 'schedule_instructor', label: 'Schedule Instructor', sortable: true },
   
-  { key: 'pass_product_type_code', label: 'Pass Product Type Code' },
-  { key: 'pass_product_type', label: 'Pass Product Type' },
-  { key: 'pass_media_type_code', label: 'Pass Media Type Code' },
-  { key: 'pass_media_type', label: 'Pass Media Type' },
+  { key: 'pass_product_type_code', label: 'Pass Product Type Code', sortable: true },
+  { key: 'pass_product_type', label: 'Pass Product Type', sortable: true },
+  { key: 'pass_media_type_code', label: 'Pass Media Type Code', sortable: true },
+  { key: 'pass_media_type', label: 'Pass Media Type', sortable: true },
   
-  { key: 'deferral_calendar_code', label: 'Deferral Calendar Code' },
-  { key: 'deferral_calendar', label: 'Deferral Calendar' },
-  { key: 'customer_property_set_code', label: 'Customer Property Set Code' },
-  { key: 'customer_property_set', label: 'Customer Property Set' },
+  { key: 'deferral_calendar_code', label: 'Deferral Calendar Code', sortable: true },
+  { key: 'deferral_calendar', label: 'Deferral Calendar', sortable: true },
+  { key: 'customer_property_set_code', label: 'Customer Property Set Code', sortable: true },
+  { key: 'customer_property_set', label: 'Customer Property Set', sortable: true },
 
-  { key: 'operator_id', label: 'Operator ID' },
-  { key: 'update_date', label: 'Updated' },
+  { key: 'operator_id', label: 'Operator ID', sortable: true },
+  { key: 'update_date', label: 'Updated', sortable: true },
 ];
+
+const TABLE_STORAGE_KEY = 'productComponentTable';
 
 export default function ProductComponentSearch() {
   const [filters, setFilters] = useState({ pc: '', description: '' });
@@ -298,6 +303,11 @@ export default function ProductComponentSearch() {
 
   const tableRows = isResultsMode ? resultRows : filteredComponents;
 
+  const handleResetColumns = () => {
+    localStorage.removeItem(`colw:${TABLE_STORAGE_KEY}`);
+    window.location.reload();
+  };
+
   return (
     <BrowserLayout
       sidebar={
@@ -345,50 +355,32 @@ export default function ProductComponentSearch() {
         </>
       }
       searchPanel={
-        <>
-          <div className="pm-section grid grid-cols-12 gap-4 items-center">
-            <input
-              type="text"
-              name="pc"
-              placeholder="PC"
-              value={filters.pc}
-              onChange={handleChange}
-              onKeyDown={onKeyDownBasic}
-              className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
-            />
-            <input
-              type="text"
-              name="description"
-              placeholder="Description"
-              value={filters.description}
-              onChange={handleChange}
-              onKeyDown={onKeyDownBasic}
-              className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
-            />
-            <div className="pm-section-right">
-              <button onClick={handleSearch} className="btn btn-light">Search</button>
-              <button onClick={handleClear} className="btn btn-light">Clear</button>
-            </div>
-          </div>
-          <div className="pm-divider-bleed" />
-        </>
+        <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+          <input
+            type="text"
+            name="pc"
+            placeholder="PC"
+            value={filters.pc}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+          />
+          <input
+            type="text"
+            name="description"
+            placeholder="Description"
+            value={filters.description}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+          />
+        </SearchToolbar>
       }
       paneHeader={
-        <>
-          <div className="pm-pane-title">{headerTitle}</div>
-          <div className="flex items-center gap-2 grow justify-end">
-            <button
-              onClick={() => {
-                localStorage.removeItem('colw:product-component-search');
-                window.location.reload();
-              }}
-              className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
-              title="Reset column widths"
-            >
-              Reset Columns
-            </button>
-          </div>
-        </>
+        <PaneHeader
+          title={headerTitle}
+          onResetColumns={handleResetColumns}
+        />
       }
       table={
         <DataTable

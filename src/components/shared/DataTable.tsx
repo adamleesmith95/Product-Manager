@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useTableColumnSizing } from '../../hooks/useTableColumnSizing';
 
 export type ColumnDefinition<T> = {
@@ -20,7 +20,6 @@ type SortConfig = {
 } | null;
 
 type DataTableProps<T> = {
-  
   columns: ColumnDefinition<T>[];
   data: T[];
   rowKey: keyof T;
@@ -32,25 +31,22 @@ type DataTableProps<T> = {
   className?: string;
   defaultSort?: { key: keyof T; direction: 'asc' | 'desc' };
   loading?: boolean;
-  stickyHeader?: boolean;
-  maxHeight?: number;
-  
+  autoSizeDeps?: any[]; // NEW
 };
 
 export default function DataTable<T extends Record<string, any>>({
   columns,
   data,
-  rowKey = 'id' as keyof T,  // ✅ Default to 'id'
-  storageKey = 'defaultTable',  // ✅ Default storage key
-  loading = false,
-  emptyMessage = 'No results found',
-  stickyHeader = false,
-  maxHeight,
+  rowKey,
+  storageKey,
   onRowClick,
   onRowDoubleClick,
-  selectedRowKey = null,
+  selectedRowKey,
+  emptyMessage = 'No data available',
   className = '',
   defaultSort,
+  loading = false,
+  autoSizeDeps = [], // NEW
 }: DataTableProps<T>) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
@@ -59,16 +55,17 @@ export default function DataTable<T extends Record<string, any>>({
 
   // Build columnCaps object
   const columnCaps = useMemo(() => {
-    return columns.reduce((acc, col, idx) => {
-      if (col.minWidth || col.maxWidth || col.width) {
-        acc[idx] = {
-          min: col.minWidth,
-          max: col.maxWidth,
-          seed: col.width, // Use width as the seed/default size
-        };
+    const caps: Record<number, { min?: number; max?: number; seed?: number }> = {};
+
+    columns.forEach((col, i) => {
+      // ONLY create a cap when width is explicitly provided on the column.
+      // This keeps behavior aligned with ProductComponentSearch (no forced floor).
+      if (typeof col.width === 'number') {
+        caps[i] = { seed: col.width };
       }
-      return acc;
-    }, {} as Record<number, { min?: number; max?: number; seed?: number }>);
+    });
+
+    return Object.keys(caps).length ? caps : undefined;
   }, [columns]);
 
   const { ColGroup, startResize, autoFitColumn } = useTableColumnSizing(tableRef, {
@@ -76,8 +73,8 @@ export default function DataTable<T extends Record<string, any>>({
     sampleRows: 300,
     minPx: 3,
     maxPx: 800,
-    autoSizeDeps: [data.length, columns.length],
-    columnCaps,
+    autoSizeDeps: [data.length, columns.length, ...autoSizeDeps],
+    columnCaps, // now only applies when a column has explicit width
   });
 
   // Sorting logic
@@ -149,7 +146,7 @@ export default function DataTable<T extends Record<string, any>>({
               if (!col || !col.key) return null;
               
               return (
-                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`}>
+                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`} style={{ minWidth: 0 }}>
                   <div
                     className="cursor-pointer select-none"
                     onClick={() => handleSort(col.key)}
@@ -201,7 +198,7 @@ export default function DataTable<T extends Record<string, any>>({
                     const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
 
                     return (
-                      <td key={String(col.key)} className={cellClassName}>
+                      <td key={String(col.key)} className={cellClassName} style={{ minWidth: 0 }}>
                         {col.render ? col.render(value, row) : value ?? ''}
                       </td>
                     );
