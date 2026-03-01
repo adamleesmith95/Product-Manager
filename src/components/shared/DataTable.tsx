@@ -31,50 +31,50 @@ type DataTableProps<T> = {
   className?: string;
   defaultSort?: { key: keyof T; direction: 'asc' | 'desc' };
   loading?: boolean;
-  autoSizeDeps?: any[]; // NEW
+  autoSizeDeps?: ReadonlyArray<unknown>;
 };
 
-export default function DataTable<T extends Record<string, any>>({
-  columns,
-  data,
-  rowKey,
-  storageKey,
-  onRowClick,
-  onRowDoubleClick,
-  selectedRowKey,
-  emptyMessage = 'No data available',
-  className = '',
-  defaultSort,
-  loading = false,
-  autoSizeDeps = [], // NEW
-}: DataTableProps<T>) {
+export function DataTable<T>(props: DataTableProps<T>) {
+  const {
+    columns,
+    data,
+    rowKey,
+    storageKey,
+    selectedRowKey,
+    onRowClick,
+    onRowDoubleClick,
+    emptyMessage,
+    className = '', // <-- add this
+    loading,
+    autoSizeDeps = [],
+  } = props;
+
   const tableRef = useRef<HTMLTableElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
-    defaultSort ? { key: String(defaultSort.key), direction: defaultSort.direction } : null
+    props.defaultSort ? { key: String(props.defaultSort.key), direction: props.defaultSort.direction } : null
   );
 
   // Build columnCaps object
   const columnCaps = useMemo(() => {
-    const caps: Record<number, { min?: number; max?: number; seed?: number }> = {};
-
-    columns.forEach((col, i) => {
-      // ONLY create a cap when width is explicitly provided on the column.
-      // This keeps behavior aligned with ProductComponentSearch (no forced floor).
-      if (typeof col.width === 'number') {
-        caps[i] = { seed: col.width };
+    return columns.reduce((acc, col, idx) => {
+      if (col.minWidth || col.maxWidth || col.width) {
+        acc[idx] = {
+          min: col.minWidth,
+          max: col.maxWidth,
+          seed: col.width, // Use width as the seed/default size
+        };
       }
-    });
-
-    return Object.keys(caps).length ? caps : undefined;
+      return acc;
+    }, {} as Record<number, { min?: number; max?: number; seed?: number }>);
   }, [columns]);
 
   const { ColGroup, startResize, autoFitColumn } = useTableColumnSizing(tableRef, {
     storageKey,
     sampleRows: 300,
-    minPx: 3,
+    minPx: 48,
     maxPx: 800,
     autoSizeDeps: [data.length, columns.length, ...autoSizeDeps],
-    columnCaps, // now only applies when a column has explicit width
+    columnCaps,
   });
 
   // Sorting logic
@@ -135,6 +135,15 @@ export default function DataTable<T extends Record<string, any>>({
     return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
   };
 
+  const formatCellValue = (value: unknown): React.ReactNode => {
+    if (value == null) return '';
+    if (React.isValidElement(value)) return value;
+    if (typeof value === 'string' || typeof value === 'number') return value;
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (value instanceof Date) return value.toISOString();
+    return String(value);
+  };
+
   return (
     <div className="relative" aria-busy={loading}>
       <table className={`pm-table ${className}`} ref={tableRef}>
@@ -146,7 +155,7 @@ export default function DataTable<T extends Record<string, any>>({
               if (!col || !col.key) return null;
               
               return (
-                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`} style={{ minWidth: 0 }}>
+                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`}>
                   <div
                     className="cursor-pointer select-none"
                     onClick={() => handleSort(col.key)}
@@ -193,13 +202,14 @@ export default function DataTable<T extends Record<string, any>>({
                   onDoubleClick={() => onRowDoubleClick?.(row)}
                 >
                   {columns.map((col) => {
-                    const value = row[col.key];
-                    const alignClass = col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
+                    const value = row[col.key] as unknown;
+                    const alignClass =
+                      col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
                     const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
 
                     return (
-                      <td key={String(col.key)} className={cellClassName} style={{ minWidth: 0 }}>
-                        {col.render ? col.render(value, row) : value ?? ''}
+                      <td key={String(col.key)} className={cellClassName}>
+                        {col.render ? col.render(value, row) : formatCellValue(value)}
                       </td>
                     );
                   })}
@@ -220,3 +230,5 @@ export default function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
+
+export default DataTable;

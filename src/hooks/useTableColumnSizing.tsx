@@ -24,6 +24,8 @@ type Options = {
   columnCaps?: ColumnCaps;  // <-- NEW
 };
 
+const MIN_ROWS_TO_PERSIST = 5;
+
 export function useTableColumnSizing<T extends HTMLTableElement>(
   tableRef: React.RefObject<T>,
   {

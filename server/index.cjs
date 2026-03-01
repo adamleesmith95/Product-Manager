@@ -366,14 +366,16 @@ SELECT
   sph.security_level [Security Level],
   sph.price_change_level [Price Change],
   sph.commission_ind [Commission],
-  CASE WHEN sphmf.mm_function_code = 35 THEN 'Y' ELSE '' END AS [Pass Comp],
-  CASE WHEN sphmf.mm_function_code = 10 THEN 'Y' ELSE '' END AS [Ticket Comp],
-  CASE WHEN sphmf.mm_function_code = 12 THEN 'Y' ELSE '' END AS [Other Comp],
-  CASE WHEN sphmf.mm_function_code = 40 THEN 'Y' ELSE '' END AS [Pass Trade],
-  CASE WHEN sphmf.mm_function_code = 42 THEN 'Y' ELSE '' END AS [Ticket Trade],
-  CASE WHEN sphmf.mm_function_code = 45 THEN 'Y' ELSE '' END AS [Other Trade],
+
+  mmf.[Pass Comp],
+  mmf.[Ticket Comp],
+  mmf.[Other Comp],
+  mmf.[Pass Trade],
+  mmf.[Ticket Trade],
+  mmf.[Other Trade],
+
   sph.identify_customer_ind [ID Customer],
-  CASE WHEN sphmf.mm_function_code = 80 THEN 'Y' ELSE '' END AS [Coupon],
+  mmf.[Coupon],
   '' [Reservation],
   slob.description [Primary LOB],
   sph.primary_lob_code [Primary LOB Code],
@@ -441,22 +443,47 @@ LEFT JOIN SalesReportCategory src
   ON sph.SalesReportCategoryCode = src.SalesReportCategoryCode
 LEFT JOIN s_internet_authorization sia
   ON sphi.internet_authorization_code = sia.internet_authorization_code
-LEFT JOIN s_product_header_mm_function sphmf
-  ON sph.product_header_code = sphmf.product_header_code
-LEFT JOIN s_system_function sf
-  ON sphmf.mm_function_code = sf.system_function_code
-LEFT JOIN s_product_header_advance_days sphad
-  ON sph.product_header_code = sphad.product_header_code
 LEFT JOIN SalesReportGroup srg
   ON src.SalesReportGroupCode = srg.SalesReportGroupCode
-LEFT JOIN s_product_header_resort_units_header sphruh
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MAX(CASE WHEN mm_function_code = 35 THEN 'Y' ELSE '' END) AS [Pass Comp],
+    MAX(CASE WHEN mm_function_code = 10 THEN 'Y' ELSE '' END) AS [Ticket Comp],
+    MAX(CASE WHEN mm_function_code = 12 THEN 'Y' ELSE '' END) AS [Other Comp],
+    MAX(CASE WHEN mm_function_code = 40 THEN 'Y' ELSE '' END) AS [Pass Trade],
+    MAX(CASE WHEN mm_function_code = 42 THEN 'Y' ELSE '' END) AS [Ticket Trade],
+    MAX(CASE WHEN mm_function_code = 45 THEN 'Y' ELSE '' END) AS [Other Trade],
+    MAX(CASE WHEN mm_function_code = 80 THEN 'Y' ELSE '' END) AS [Coupon]
+  FROM s_product_header_mm_function
+  GROUP BY product_header_code
+) mmf
+  ON mmf.product_header_code = sph.product_header_code
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MIN(min_advance_days) AS min_advance_days,
+    MAX(max_advance_days) AS max_advance_days
+  FROM s_product_header_advance_days
+  GROUP BY product_header_code
+) sphad
+  ON sph.product_header_code = sphad.product_header_code
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MIN(relation_id) AS relation_id
+  FROM s_product_header_resort_units_header
+  GROUP BY product_header_code
+) sphruh
   ON sph.product_header_code = sphruh.product_header_code
+
 WHERE sdc.active_ind = 'Y'
   AND (@active IS NULL OR sph.active_ind = @active)
-  
   AND (@lob IS NULL OR sph.primary_lob_code = @lob)
   AND (@displayGroup IS NULL OR sdg.display_group_code = @displayGroup)
-
   AND (@cat IS NULL OR sdc.display_category_code = @cat)
   AND (@description IS NULL OR sph.description LIKE '%' + @description + '%')
   AND (@code IS NULL OR sph.product_header_code = @code)

@@ -341,3 +341,7 @@
 .pm-sidebar-item-selected:hover {
   background-color: #bfdbfe;
 }
+
+.stable-scroll {
+  scrollbar-gutter: stable;
+}

@@ -5,6 +5,8 @@ import { useDataCache } from '../context/DataCacheContext';
 import SearchToolbar from './shared/SearchToolbar';
 import PaneHeader from './shared/PaneHeader';
 import PaneActions from './shared/PaneActions';
+import { useBrowserData } from '../hooks/useBrowserData';
+import { resetTableColumns } from '../utils/tableStorage';
 
 const DISPLAY_CATEGORY_COLUMNS = [
   { key: 'code', label: 'Code', sortable: true, sortType: 'string' },
@@ -25,7 +27,6 @@ export default function DisplayCategorySearch() {
   const [filters, setFilters] = useState({ code: '', description: '' });
   const [tree, setTree] = useState([]);
   const [selectedGroupCode, setSelectedGroupCode] = useState('');
-  const [loading, setLoading] = useState(false);
   const [selectedCategoryCode, setSelectedCategoryCode] = useState(null);
   const groupBtnRefs = useRef({});
 
@@ -34,35 +35,31 @@ export default function DisplayCategorySearch() {
 
   const isResultsMode = !!searchTitle?.trim();
 
+  const {
+    data: dcTreeData,
+    loading,
+    error: dcTreeError,
+  } = useBrowserData(
+    [cache.dcTree],
+    async (signal) => {
+      if (Array.isArray(cache.dcTree) && cache.dcTree.length) return cache.dcTree;
+      const res = await fetch('/api/display-categories/tree', { signal });
+      const json = await res.json();
+      return Array.isArray(json) ? json : [];
+    }
+  );
+
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        if (Array.isArray(cache.dcTree) && cache.dcTree.length) {
-          setTree(cache.dcTree);
-          return;
-        }
+    if (!dcTreeData) return;
+    setTree(dcTreeData);
+    if (!(Array.isArray(cache.dcTree) && cache.dcTree.length)) {
+      setCache('dcTree', dcTreeData);
+    }
+  }, [dcTreeData, cache.dcTree, setCache]);
 
-        setLoading(true);
-        const res = await fetch('/api/display-categories/tree');
-        const json = await res.json();
-        if (!alive) return;
-
-        const list = Array.isArray(json) ? json : [];
-        setTree(list);
-        setCache('dcTree', list);
-      } catch (err) {
-        console.error('[DC Search] tree load failed', err);
-        setTree([]);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [cache.dcTree, setCache]);
+  useEffect(() => {
+    if (dcTreeError) console.error('[DC Search] tree load failed', dcTreeError);
+  }, [dcTreeError]);
 
   const selectedGroupObj = useMemo(
     () => tree.find((g) => String(g.groupCode) === String(selectedGroupCode)) || null,
@@ -182,7 +179,7 @@ export default function DisplayCategorySearch() {
       : 'Choose a display group';
 
   const handleResetColumns = () => {
-    localStorage.removeItem(`colw:${TABLE_STORAGE_KEY}`);
+    resetTableColumns(TABLE_STORAGE_KEY);
     window.location.reload();
   };
 
@@ -198,6 +195,14 @@ export default function DisplayCategorySearch() {
     });
   };
 
+  const handleNew = () => {
+    // handle new category logic
+  };
+
+  const handleClone = () => {
+    // handle clone category logic
+  };
+
   return (
     <BrowserLayout
       sidebar={
@@ -211,7 +216,7 @@ export default function DisplayCategorySearch() {
                   key={group.groupCode}
                   type="button"
                   onClick={() => handleSelectGroup(group.groupCode)}
-                  className={`${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
+                  className={`pm-list-item ${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
                   title={group.label}
                   ref={(el) => { groupBtnRefs.current[String(group.groupCode)] = el; }}
                 >
@@ -273,7 +278,14 @@ export default function DisplayCategorySearch() {
           }
         />
       }
-      paneFooter={<PaneActions />}
+      paneFooter={
+        <PaneActions
+          onNew={handleNew}
+          onClone={handleClone}
+          newLabel="New"
+          cloneLabel="Clone"
+        />
+      }
     />
   );
 }

@@ -5,6 +5,8 @@ import { useDataCache } from '../context/DataCacheContext';
 import SearchToolbar from './shared/SearchToolbar';
 import PaneHeader from './shared/PaneHeader';
 import PaneActions from './shared/PaneActions';
+import { useBrowserData } from '../hooks/useBrowserData';
+import { resetTableColumns } from '../utils/tableStorage';
 
 const COMPONENT_COLUMNS = [
   { key: 'code', label: 'Code', sortable: true },
@@ -70,7 +72,7 @@ const COMPONENT_COLUMNS = [
   { key: 'update_date', label: 'Updated', sortable: true },
 ];
 
-const TABLE_STORAGE_KEY = 'productComponentTable';
+const TABLE_STORAGE_KEY = 'product-component-search';
 
 export default function ProductComponentSearch() {
   const [filters, setFilters] = useState({ pc: '', description: '' });
@@ -78,7 +80,7 @@ export default function ProductComponentSearch() {
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCompCode, setSelectedCompCode] = useState('');
-  const [loading, setLoading] = useState(false);
+  //const [loading, setLoading] = useState(false);
 
   const [searchTitle, setSearchTitle] = useState('');
   const isResultsMode = !!searchTitle?.trim();
@@ -97,44 +99,34 @@ export default function ProductComponentSearch() {
 
   const { cache, setCache } = useDataCache();
 
+  const {
+    data: pcTreeData,
+    loading,
+    error: pcTreeError,
+  } = useBrowserData(
+    [cache.pcTree],
+    async (signal) => {
+      if (Array.isArray(cache.pcTree) && cache.pcTree.length) return cache.pcTree;
+      const res = await fetch('/api/components/tree', { signal });
+      const json = await res.json();
+      return Array.isArray(json) ? json : [];
+    }
+  );
+
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        // ✅ Check cache FIRST
-        if (cache.pcTree) {
-          console.log('[PC] Using cached tree');
-          setTree(cache.pcTree);
-          return; // Skip fetch entirely
-        }
+    if (!pcTreeData) return;
+    setTree(pcTreeData);
+    if (!(Array.isArray(cache.pcTree) && cache.pcTree.length)) {
+      setCache('pcTree', pcTreeData);
+    }
+  }, [pcTreeData, cache.pcTree, setCache]);
 
-        setLoading(true);
-        const res = await fetch('/api/components/tree');
-        const json = await res.json();
-        if (!alive) return;
-        
-        const list = Array.isArray(json) ? json : [];
-        
-        if (list.length > 0 && list[0].categories?.length > 0) {
-          const firstComp = list[0].categories[0].components?.[0];
-          console.log('[PC Search] First component data:', firstComp);
-          console.log('[PC Search] Available keys:', Object.keys(firstComp || {}));
-        }
-        
-        setTree(list);
-        setCache('pcTree', list); // ✅ Save to cache
-        
-      } catch (err) {
-        console.error('[PC Search] tree load failed', err);
-        setTree([]);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [cache, setCache]); // ✅ Add dependencies
+  useEffect(() => {
+    if (pcTreeError) console.error('[PC Search] tree load failed', pcTreeError);
+  }, [pcTreeError]);
+  
 
-  function toggleGroup(code) {
+   function toggleGroup(code) {
     setExpandedGroups(prev => {
       const next = new Set(prev);
       if (next.has(code)) next.delete(code);
@@ -304,9 +296,26 @@ export default function ProductComponentSearch() {
   const tableRows = isResultsMode ? resultRows : filteredComponents;
 
   const handleResetColumns = () => {
-    localStorage.removeItem(`colw:${TABLE_STORAGE_KEY}`);
+    resetTableColumns(TABLE_STORAGE_KEY);
     window.location.reload();
   };
+
+  const handleNew = () => {
+    // handle new component logic
+  };
+
+  const handleClone = () => {
+    // handle clone component logic
+  };
+
+  const paneFooter = (
+    <PaneActions
+      onNew={handleNew}
+      onClone={handleClone}
+      newLabel="New"
+      cloneLabel="Clone"
+    />
+  );
 
   return (
     <BrowserLayout
@@ -387,7 +396,7 @@ export default function ProductComponentSearch() {
           columns={COMPONENT_COLUMNS}
           data={tableRows}
           rowKey="code"
-          storageKey="product-component-search"
+          storageKey={TABLE_STORAGE_KEY}
           loading={loading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row) => setSelectedCompCode(row.code)}
@@ -408,12 +417,7 @@ export default function ProductComponentSearch() {
           
         />
       }
-      paneFooter={
-        <>
-          <button className="btn btn-light">New</button>
-          <button className="btn btn-light">Clone</button>
-        </>
-      }
+      paneFooter={paneFooter}
     />
   );
 }

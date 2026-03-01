@@ -3,6 +3,9 @@ import BrowserLayout from './shared/BrowserLayout';
 import ProductHeaderSearch from './ProductHeaderSearch';
 import DataTable from './shared/DataTable';
 import { ColumnDefinition } from './shared/DataTable';
+import { resetTableColumns } from "../utils/tableStorage";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useBrowserData } from "../hooks/useBrowserData";
 
 type Category = {
   code: string;
@@ -133,15 +136,59 @@ const PRODUCT_COLUMNS: ColumnDefinition<ProductRow>[] = [
   { key: 'priceBySalesChannel', label: 'Price By Sales Channel', sortable: true, sortType: 'string' },
 ];
 
+const onResetColumns = () => {
+  resetTableColumns("display-category-browser");
+  window.location.reload();
+};
+
 export default function DisplayCategoryBrowser({ 
   initialCategoryCode,
   onOpenProduct 
 }: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
   const [catReloadNonce, setCatReloadNonce] = useState(0);
+const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? "");
+  const {
+    data: catsData,
+    loading: catsLoading,
+    error: catsError,
+  } = useBrowserData<Category[]>(
+    [],
+    async (signal) => {
+      const res = await fetch("/api/lookups/display-categories", { signal });
+      const data = await res.json();
+      return (data.rows ?? []).map((r: any) => ({
+        code: String(r.code),
+        label: String(r.label),
+        groupCode: r.groupCode ? String(r.groupCode) : undefined,
+        groupLabel: r.groupLabel ? String(r.groupLabel) : undefined,
+        displayOrder:
+          typeof r.displayOrder === "number" ? r.displayOrder : Number(r.displayOrder ?? 0),
+      }));
+    }
+  );
+
+  useEffect(() => {
+    if (!catsData) return;
+    setCats(catsData);
+
+    if (!initialCategoryCode && catsData.length && !selectedCat) {
+      setSelectedCat(catsData[0].code);
+      setLastCatCode(catsData[0].code);
+      setLastCatName(catsData[0].label);
+      localStorage.setItem("lastCatCode", catsData[0].code);
+      localStorage.setItem("lastCatName", catsData[0].label);
+    }
+  }, [catsData, initialCategoryCode, selectedCat]);
+
+  useEffect(() => {
+    if (catsError) console.error("Failed to load display categories", catsError);
+  }, [catsError]);
 
   const [cats, setCats] = useState<Category[]>([]);
-  const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? "");
+  
+  const [lastCatCode, setLastCatCode] = useState<string>("");
+  const [lastCatName, setLastCatName] = useState<string>("");
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [originalRows, setOriginalRows] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -152,10 +199,10 @@ export default function DisplayCategoryBrowser({
   const [inlineCode, setInlineCode] = useState<string>("");
   const [inlineDesc, setInlineDesc] = useState<string>("");
 
-  const [selectedPhcCode, setSelectedPhcCode] = useState<string | null>(null);
+  const debouncedInlineCode = useDebouncedValue(inlineCode, 180);
+  const debouncedInlineDesc = useDebouncedValue(inlineDesc, 180);
 
-  const [lastCatCode, setLastCatCode] = useState<string>("");
-  const [lastCatName, setLastCatName] = useState<string>("");
+  const [selectedPhcCode, setSelectedPhcCode] = useState<string | null>(null);
 
   const scrollRowIntoView = (code: string) => {
     const el = document.getElementById(`phc-row-${code}`);
@@ -181,34 +228,6 @@ export default function DisplayCategoryBrowser({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------- Load categories once ----------
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/lookups/display-categories");
-        const data = await res.json();
-        const list: Category[] = (data.rows ?? []).map((r: any) => ({
-          code: String(r.code),
-          label: String(r.label),
-          groupCode: r.groupCode ? String(r.groupCode) : undefined,
-          groupLabel: r.groupLabel ? String(r.groupLabel) : undefined,
-          displayOrder:
-            typeof r.displayOrder === "number" ? r.displayOrder : Number(r.displayOrder ?? 0),
-        }));
-        setCats(list);
-        if (!initialCategoryCode && list.length && !selectedCat) {
-          setSelectedCat(list[0].code);
-          setLastCatCode(list[0].code);
-          setLastCatName(list[0].label);
-          localStorage.setItem("lastCatCode", list[0].code);
-          localStorage.setItem("lastCatName", list[0].label);
-        }
-      } catch (e) {
-        console.error("Failed to load display categories", e);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // ---------- Select a category ----------
   const handleSelectCategory = (code: string) => {
@@ -277,20 +296,23 @@ export default function DisplayCategoryBrowser({
 
   // ---------- Inline filters ----------
   useEffect(() => {
-    const codeTerm = inlineCode.trim().toLowerCase();
-    const descTerm = inlineDesc.trim().toLowerCase();
+    const codeTerm = debouncedInlineCode.trim().toLowerCase();
+    const descTerm = debouncedInlineDesc.trim().toLowerCase();
     let filtered = originalRows;
+
     if (codeTerm) {
-      filtered = filtered.filter((row) => String(row.code ?? "").toLowerCase().includes(codeTerm));
+      filtered = filtered.filter((row) =>
+        String(row.code ?? "").toLowerCase().includes(codeTerm)
+      );
     }
     if (descTerm) {
       filtered = filtered.filter((row) =>
         String(row.description ?? "").toLowerCase().includes(descTerm)
       );
     }
+
     setRows(filtered);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inlineCode, inlineDesc]);
+  }, [debouncedInlineCode, debouncedInlineDesc, originalRows]);
 
   // ---------- Global search ----------
   const handleSearch = async (filters: SearchFilters) => {
@@ -516,6 +538,9 @@ export default function DisplayCategoryBrowser({
     return () => window.removeEventListener("reselect-phc", handler as EventListener);
   }, []);
 
+  // table spinner only (keep left pane clickable)
+  const tableLoading = loading || catsLoading;
+
   // ---------- Header title ----------
   const headerTitle = isResultsMode
     ? searchTitle
@@ -579,10 +604,7 @@ export default function DisplayCategoryBrowser({
               aria-label="Search Description"
             />
             <button
-              onClick={() => {
-                localStorage.removeItem('colw:display-category-browser');
-                window.location.reload();
-              }}
+              onClick={onResetColumns}
               className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
               title="Reset column widths to auto-fit content"
             >
@@ -604,7 +626,7 @@ export default function DisplayCategoryBrowser({
             onOpenProduct(row);
           }}
           emptyMessage={isResultsMode ? searchTitle : 'No products found'}
-          loading={loading}
+          loading={tableLoading}
         />
       }
       paneFooter={
