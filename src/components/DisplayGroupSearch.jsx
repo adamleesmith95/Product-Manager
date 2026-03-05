@@ -1,0 +1,125 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import BrowserLayout from './shared/BrowserLayout';
+import DataTable from './shared/DataTable';
+import { useBrowserData } from '../hooks/useBrowserData';
+import PaneHeader from './shared/PaneHeader';
+import PaneActions from './shared/PaneActions';
+import SearchToolbar from './shared/SearchToolbar';
+import { resetTableColumns } from '../utils/tableStorage';
+
+const TABLE_STORAGE_KEY = 'display-group-search';
+
+const COLUMNS = [
+  { key: 'code', label: 'Code', sortable: true},
+  { key: 'description', label: 'Description', sortable: true},
+  { key: 'active', label: 'Active', sortable: true},
+  { key: 'displayOrder', label: 'Display Order', sortable: true},
+  { key: 'operatorId', label: 'Operator ID', sortable: true},
+  { key: 'updated', label: 'Updated', sortable: true},
+];
+
+export default function DisplayGroupSearch() {
+  const [filters, setFilters] = useState({ code: '', description: '' });
+  const [appliedFilters, setAppliedFilters] = useState({ code: '', description: '' });
+
+  const fetchDisplayGroups = useCallback(async (signal) => {
+    const res = await fetch('/api/display-groups', { signal });
+    const json = await res.json();
+    const rows = Array.isArray(json) ? json : Array.isArray(json?.rows) ? json.rows : [];
+    return rows;
+  }, []);
+
+  const { data, loading, error } = useBrowserData([], fetchDisplayGroups);
+
+  const rawRows = Array.isArray(data) ? data : [];
+
+  const tableRows = useMemo(() => {
+    const codeQ = appliedFilters.code.trim().toLowerCase();
+    const descQ = appliedFilters.description.trim().toLowerCase();
+
+    if (!codeQ && !descQ) return rawRows;
+
+    return rawRows.filter((r) => {
+      const code = String(r.code ?? '').toLowerCase();
+      const desc = String(r.description ?? '').toLowerCase();
+      return (!codeQ || code.includes(codeQ)) && (!descQ || desc.includes(descQ));
+    });
+  }, [rawRows, appliedFilters]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSearch = () => {
+    setAppliedFilters({
+      code: filters.code,
+      description: filters.description,
+    });
+  };
+
+  const handleClear = () => {
+    const cleared = { code: '', description: '' };
+    setFilters(cleared);
+    setAppliedFilters(cleared);
+  };
+
+  const onKeyDownBasic = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    } else if (e.key === 'Escape') {
+      handleClear();
+    }
+  };
+
+  const handleResetColumns = () => {
+    resetTableColumns(TABLE_STORAGE_KEY);
+    window.location.reload();
+  };
+
+  return (
+    <BrowserLayout
+      hideSidebar
+      paneHeader={
+        <PaneHeader
+          onResetColumns={handleResetColumns}
+        />
+      }
+      searchPanel={
+        <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+          <input
+            type="text"
+            name="code"
+            placeholder="Display Group Code"
+            value={filters.code}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+          />
+          <input
+            type="text"
+            name="description"
+            placeholder="Description"
+            value={filters.description}
+            onChange={handleChange}
+            onKeyDown={onKeyDownBasic}
+            className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+          />
+        </SearchToolbar>
+      }
+      table={
+        <DataTable
+          columns={COLUMNS}
+          data={tableRows}
+          rowKey="code"
+          storageKey={TABLE_STORAGE_KEY}
+          loading={loading}
+          autoSizeDeps={[tableRows.length]}
+          emptyMessage="No display groups found"
+        />
+      }
+      paneFooter={<PaneActions onNew={() => {}} onClone={() => {}} />}
+    />
+  );
+}

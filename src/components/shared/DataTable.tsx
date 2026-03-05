@@ -21,7 +21,8 @@ type SortConfig = {
 
 type DataTableProps<T> = {
   columns: ColumnDefinition<T>[];
-  data: T[];
+  data?: T[];              // make optional
+  rows?: T[];              // add optional compatibility prop
   rowKey: keyof T;
   storageKey: string;
   onRowClick?: (row: T) => void;
@@ -37,17 +38,23 @@ type DataTableProps<T> = {
 export function DataTable<T>(props: DataTableProps<T>) {
   const {
     columns,
-    data,
     rowKey,
     storageKey,
     selectedRowKey,
     onRowClick,
     onRowDoubleClick,
     emptyMessage,
-    className = '', // <-- add this
+    className = '',
     loading,
     autoSizeDeps = [],
   } = props;
+
+  // Accept either prop name: data or rows
+  const data: T[] = Array.isArray(props.data)
+    ? props.data
+    : Array.isArray(props.rows)
+    ? props.rows
+    : [];
 
   const tableRef = useRef<HTMLTableElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
@@ -71,7 +78,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const { ColGroup, startResize, autoFitColumn } = useTableColumnSizing(tableRef, {
     storageKey,
     sampleRows: 300,
-    minPx: 48,
+    minPx: 5,
     maxPx: 800,
     autoSizeDeps: [data.length, columns.length, ...autoSizeDeps],
     columnCaps,
@@ -182,9 +189,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
         <tbody>
           {sortedData.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="pm-td text-sm text-gray-500">
-                {emptyMessage}
-              </td>
+              <td colSpan={columns.length}>{emptyMessage ?? 'No data'}</td>
             </tr>
           ) : (
             sortedData.map((row) => {

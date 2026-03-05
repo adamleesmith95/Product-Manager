@@ -6,6 +6,8 @@ import SearchToolbar from './shared/SearchToolbar';
 import PaneHeader from './shared/PaneHeader';
 import PaneActions from './shared/PaneActions';
 import { useBrowserData } from '../hooks/useBrowserData';
+import Field from './Field';
+import TextInput from './TextInput';
 import { resetTableColumns } from '../utils/tableStorage';
 
 const DISPLAY_CATEGORY_COLUMNS = [

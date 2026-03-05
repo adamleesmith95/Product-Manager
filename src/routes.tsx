@@ -1,8 +1,8 @@
-
 // src/routes.tsx
 import { lazy } from 'react';
 import type { ReactNode } from 'react';
 import ManageDisplayCategory from './pages/ManageDisplayCategory';
+import ManageDisplayGroup from './pages/ManageDisplayGroup';
 
 // Lazy imports or direct imports depending on your preference:
 const ManageProductsForSale = lazy(() => import('./pages/ManageProductsForSale')); // wraps your existing ManageProductsForSale.jsx (see section 4)
@@ -39,7 +39,7 @@ export const routes: RouteItem[] = [
   },
   {
     path: '/product-manager/manage-display-group',
-    element: <Placeholder title="Manage Display Group" />,
+    element: <ManageDisplayGroup />,
     title: 'Manage Display Group',
     section: 'Product Tables',
   },

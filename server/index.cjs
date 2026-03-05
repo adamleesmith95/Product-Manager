@@ -73,13 +73,16 @@ const cors = require('cors');
 const app = express();
 const componentsRoutes = require('./routes/components.cjs');
 const productsRoutes = require('./routes/products.cjs');
-const displayCategoriesRoutes = require('./routes/displayCategories.cjs'); // ADD
+const displayCategoriesRoutes = require('./routes/displayCategories.cjs');
+const displayGroupsRoutes = require('./routes/displayGroups.cjs');
 app.use(cors()); // dev only
 app.use(express.json());
 
 app.use('/api', componentsRoutes);
 app.use('/api', productsRoutes);
-app.use('/api', displayCategoriesRoutes); // ADD
+app.use('/api', displayCategoriesRoutes);
+app.use('/api/display-groups', displayGroupsRoutes); // <-- change this line
+
 
 /** Connection pool */
 const pool = new sql.ConnectionPool(poolConfig);
