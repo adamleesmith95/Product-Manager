@@ -1,23 +1,56 @@
 @import "tailwindcss";
 
-@layer components {
-
-  /* ──────────────────────────
-   * Global 'visual viewport' height for the panes
-   * Change this one value to push the whole surface further down
-   * ────────────────────────── */
-  
+/* KEEP ONE modal sizing source-of-truth (outside @layer) */
 :root {
-    /* Estimate top UI height: tune once */
-    --pm-top-ui: 280px;
+  --pm-top-ui: 280px;
+  --pm-vh: calc(100vh - var(--pm-top-ui));
 
-    /* pane height = viewport minus top UI */
-    --pm-vh: calc(100vh - var(--pm-top-ui));
+  --pm-modal-entity-w: 1240px;
+  --pm-modal-entity-h: 860px;
+}
+
+@media (max-width: 1536px) {
+  :root {
+    --pm-modal-entity-w: 1180px;
+    --pm-modal-entity-h: 820px;
   }
+}
+@media (max-width: 1280px) {
+  :root {
+    --pm-modal-entity-w: 1080px;
+    --pm-modal-entity-h: 760px;
+  }
+}
+@media (max-width: 1024px) {
+  :root {
+    --pm-modal-entity-w: 940px;
+    --pm-modal-entity-h: 700px;
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    --pm-modal-entity-w: 94vw;
+    --pm-modal-entity-h: 88vh;
+  }
+}
 
+.pm-modal-panel-entity {
+  width: min(var(--pm-modal-entity-w), 96vw);
+  height: min(var(--pm-modal-entity-h), 92vh);
 
+  min-width: 320px;
+  min-height: 320px;
 
+  max-width: 96vw;
+  max-height: 92vh;
+}
 
+.pm-modal-scroll {
+  overflow: auto;
+}
+
+/* ADD THIS */
+@layer components {
 
   /* ──────────────────────────
    * Buttons
@@ -344,4 +377,174 @@
 
 .stable-scroll {
   scrollbar-gutter: stable;
+}
+
+.pc-modal-header {
+  background: #1b1a56;
+  color: #fff;
+}
+
+.pc-modal-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.pc-modal-body {
+  padding: 16px;
+}
+
+.pc-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+
+.pc-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+
+.pc-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+
+.pc-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.pc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.pc-field {
+  min-width: 0;
+}
+
+.pc-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.pc-input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+}
+
+/* Shared modal styling */
+.pm-modal-header { background: #1b1a56; color: #fff; }
+.pm-modal-title { color: #fff; font-weight: 700; }
+.pm-modal-body { padding: 16px; }
+
+.pm-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+.pm-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+.pm-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+.pm-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+/* Backward-compatible aliases (no @apply) */
+.pc-modal-header { background: #1b1a56; color: #fff; }
+.pc-modal-title { color: #fff; font-weight: 700; }
+.pc-modal-body { padding: 16px; }
+
+.pc-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+.pc-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+.pc-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+.pc-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.pcphc-modal-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* PHC + PC shared modal panel sizing */
+.pcphc-modal-panel {
+  /* >1536 */
+  width: min(1280px, 96vw);
+  height: min(880px, 94vh);
+  min-width: 360px;
+  min-height: 360px;
+  max-width: 96vw;
+  max-height: 94vh;
+}
+
+/* Your current screen (1463w) hits this */
+@media (max-width: 1536px) {
+  .pcphc-modal-panel {
+    width: min(1240px, 96vw);
+    height: min(860px, 94vh);
+  }
+}
+
+@media (max-width: 1280px) {
+  .pcphc-modal-panel {
+    width: min(1120px, 96vw);
+    height: min(780px, 92vh);
+  }
+}
+
+@media (max-width: 1024px) {
+  .pcphc-modal-panel {
+    width: min(940px, 96vw);
+    height: min(700px, 90vh);
+  }
+}
+
+@media (max-width: 768px) {
+  .pcphc-modal-panel {
+    width: 94vw;
+    height: 88vh;
+  }
 }

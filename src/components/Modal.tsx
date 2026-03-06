@@ -1,4 +1,3 @@
-
 // src/components/Modal.tsx
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
@@ -42,7 +41,14 @@ type ModalProps = {
   saveDisabled?: boolean;
   saveLabel?: string;
   closeLabel?: string;
+
+  /** NEW: Size preset for the modal */
+  sizePreset?: 'standard' | 'entity';
+  /** NEW: Custom panel class name */
+  panelClassName?: string; // NEW
 };
+
+type ModalSizePreset = 'standard' | 'entity';
 
 export default function Modal({
   open,
@@ -62,6 +68,9 @@ export default function Modal({
   saveDisabled = false,
   saveLabel = 'Save',
   closeLabel = '✕',
+
+  sizePreset = 'standard', // NEW
+  panelClassName = '', // NEW
 }: ModalProps) {
   const containerEl =
     (containerId ? document.getElementById(containerId) : null) ||
@@ -105,38 +114,41 @@ export default function Modal({
 
   const isFull = variant === 'full';
 
+  // Shared fixed baseline for PH + PC + future modals
+  const SIZE_ENTITY =
+    'w-[1160px] min-w-[1160px] h-[740px] min-h-[740px] max-w-[96vw] max-h-[92vh]';
+
+  const sizeClass =
+    sizePreset === 'entity'
+      ? 'w-[96vw] max-w-[96vw] max-h-[92vh]'
+      : `w-[96vw] ${maxWidthClass} max-h-[92vh]`;
+
   const content = (
     <div aria-modal="true" role="dialog" className={`${outerClass} flex items-center justify-center`}>
-      {/* Backdrop covers the same region as the modal (container or viewport) */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
 
-      {/* Panel */}
       <div
         ref={panelRef}
         tabIndex={-1}
         className={
           isFull
-            ? // Full-bleed panel fills the region completely
-              'relative z-10 w-full h-full outline-none flex'
-            : // Centered panel with max width & scrollable body
-              `relative z-10 w-[96vw] ${maxWidthClass} max-h-[92vh] outline-none`
+            ? 'relative z-10 w-full h-full outline-none flex'
+            : `relative z-10 outline-none ${sizeClass} ${panelClassName}` // NEW
         }
       >
         <div
           className={
             isFull
-              ? 'bg-white shadow-xl border flex-1 flex flex-col'
-              : 'bg-white shadow-xl rounded border flex flex-col max-h-[92vh]'
+              ? 'bg-white shadow-xl border flex-1 flex flex-col overflow-hidden'
+              : 'bg-white shadow-xl rounded border flex flex-col h-full overflow-hidden'
           }
         >
-          {/* Header */}
           <div
             className={
               // Default: indigo header like your screenshot; you can override via headerClassName.
               `px-4 py-3 border-b bg-indigo-950 flex items-center justify-between ${headerClassName}`
             }
           >
-            {/* Title supports string or JSX. If it's a string, we apply titleClassName; JSX is rendered as-is. */}
             <div className="min-w-0 flex-1">
               {typeof title === 'string' ? (
                 <div className={`font-semibold truncate ${titleClassName}`}>{title || 'Detail'}</div>
@@ -188,8 +200,7 @@ export default function Modal({
             </div>
           </div>
 
-          {/* Body */}
-          <div className={isFull ? 'p-4 overflow-auto flex-1' : 'p-4 overflow-auto'}>
+          <div className="pm-modal-scroll flex-1 min-h-0 overflow-auto">
             {children}
           </div>
         </div>

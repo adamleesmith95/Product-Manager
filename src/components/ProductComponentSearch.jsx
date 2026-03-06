@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
@@ -74,7 +74,10 @@ const COMPONENT_COLUMNS = [
 
 const TABLE_STORAGE_KEY = 'product-component-search';
 
-export default function ProductComponentSearch() {
+/**
+ * @param {{ onOpenProduct?: (row: any) => void }} props
+ */
+export default function ProductComponentSearch({ onOpenProduct }) {
   const [filters, setFilters] = useState({ pc: '', description: '' });
   const [tree, setTree] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
@@ -399,12 +402,8 @@ export default function ProductComponentSearch() {
           storageKey={TABLE_STORAGE_KEY}
           loading={loading}
           selectedRowKey={selectedCompCode}
-          onRowClick={(row) => setSelectedCompCode(row.code)}
-          onRowDoubleClick={(row) => {
-            if (isResultsMode) {
-              jumpToComponentCategory(row);
-            }
-          }}
+          onRowClick={(row) => setSelectedCompCode(String(row.code ?? ''))}
+          onRowDoubleClick={(row) => onOpenProduct?.(row)}
           emptyMessage={
             !isResultsMode && !selectedCatObj
               ? '← Select a category to view components.'

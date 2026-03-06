@@ -10,12 +10,12 @@ import { resetTableColumns } from '../utils/tableStorage';
 const TABLE_STORAGE_KEY = 'display-group-search';
 
 const COLUMNS = [
-  { key: 'code', label: 'Code', sortable: true},
-  { key: 'description', label: 'Description', sortable: true},
-  { key: 'active', label: 'Active', sortable: true},
-  { key: 'displayOrder', label: 'Display Order', sortable: true},
-  { key: 'operatorId', label: 'Operator ID', sortable: true},
-  { key: 'updated', label: 'Updated', sortable: true},
+  { key: 'code', label: 'Code', width: 72, maxWidth: 90 },
+  { key: 'description', label: 'Description', maxWidth: 100 },
+  { key: 'active', label: 'Active', width: 64, maxWidth: 76 },
+  { key: 'displayOrder', label: 'Display Order', maxWidth: 100 },
+  { key: 'operatorId', label: 'Operator ID',  maxWidth: 100 },
+  { key: 'updated', label: 'Updated', width: 120, maxWidth: 240 },
 ];
 
 export default function DisplayGroupSearch() {
@@ -109,15 +109,18 @@ export default function DisplayGroupSearch() {
         </SearchToolbar>
       }
       table={
-        <DataTable
-          columns={COLUMNS}
-          data={tableRows}
-          rowKey="code"
-          storageKey={TABLE_STORAGE_KEY}
-          loading={loading}
-          autoSizeDeps={[tableRows.length]}
-          emptyMessage="No display groups found"
-        />
+        <div className="min-w-0 w-full overflow-x-hidden">
+          <DataTable
+            columns={COLUMNS}
+            data={tableRows}
+            rowKey="code"
+            storageKey={TABLE_STORAGE_KEY}
+            loading={loading}
+            autoSizeDeps={[tableRows.length]}
+            emptyMessage="No display groups found"
+            className="w-full"
+          />
+        </div>
       }
       paneFooter={<PaneActions onNew={() => {}} onClone={() => {}} />}
     />

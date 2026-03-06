@@ -261,24 +261,27 @@ export default function DisplayCategorySearch() {
         />
       }
       table={
-        <DataTable
-          columns={DISPLAY_CATEGORY_COLUMNS}
-          data={tableRows}
-          rowKey="code"
-          storageKey={TABLE_STORAGE_KEY}
-          autoSizeDeps={[selectedGroupCode, isResultsMode, searchTitle]}
-          selectedRowKey={selectedCategoryCode}
-          loading={loading}
-          emptyMessage={
-            !isResultsMode && !selectedGroupObj
-              ? '← Select a display group to view categories.'
-              : !isResultsMode && selectedGroupObj && tableRows.length === 0
-              ? 'No categories found for this group.'
-              : isResultsMode && tableRows.length === 0
-              ? searchTitle || 'Results (0)'
-              : 'No categories found'
-          }
-        />
+        <div className="min-w-0 w-full overflow-x-hidden">
+          <DataTable
+            columns={DISPLAY_CATEGORY_COLUMNS}
+            data={tableRows}
+            rowKey="code"
+            storageKey={TABLE_STORAGE_KEY}
+            loading={loading}
+            autoSizeDeps={[tableRows.length]}
+            className="w-full"
+            selectedRowKey={selectedCategoryCode}
+            emptyMessage={
+              !isResultsMode && !selectedGroupObj
+                ? '← Select a display group to view categories.'
+                : !isResultsMode && selectedGroupObj && tableRows.length === 0
+                ? 'No categories found for this group.'
+                : isResultsMode && tableRows.length === 0
+                ? searchTitle || 'Results (0)'
+                : 'No categories found'
+            }
+          />
+        </div>
       }
       paneFooter={
         <PaneActions

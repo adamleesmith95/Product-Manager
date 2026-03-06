@@ -1,4 +1,3 @@
-
 // server/routes/components.cjs
 const express = require('express');
 const router = express.Router();
@@ -83,8 +82,7 @@ router.get('/components/tree', async (req, res, next) => {
         dc.description AS component_deferral_calendar,
 
         ISNULL(pcps.customerpropertysetcode, '0') AS component_customer_property_set_code,
-        cp.description AS component_customer_property_set 
-
+        cps.description AS component_customer_property_set 
       FROM s_product_group spg
       JOIN s_product_category spc
           ON spg.product_group_code = spc.product_group_code
@@ -139,8 +137,8 @@ router.get('/components/tree', async (req, res, next) => {
          ON pdc.deferralcalendarcode = dc.deferralcalendarcode
       LEFT JOIN ProductCustomerPropertySet pcps
          ON sp.product_code = pcps.productcode
-      LEFT JOIN CustomerProperty cp
-         ON pcps.customerpropertysetcode = cp.customerpropertycode
+      LEFT JOIN CustomerPropertySet cps
+         ON pcps.CustomerPropertySetCode = cps.CustomerPropertySetCode
       
       ORDER BY
           spg.display_order,
@@ -247,6 +245,95 @@ router.get('/components/tree', async (req, res, next) => {
     });
 
     res.json(tree);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- Modal detail endpoints ---
+router.get('/product-components/:productCode/general', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT
+        sp.product_code AS productCode,
+        sp.description AS description,
+        spc.description AS productCategory,
+        sp.display_order AS displayOrder,
+        spp.description AS productProfileType,
+        sp.units AS units,
+        sp.sales_units AS salesUnits,
+        sp.active_ind AS active,
+        sp.display_ind AS display,
+        sp.change_revenue_location_ind AS changeRevenueLocation,
+        CONVERT(VARCHAR, sp.payment_date, 103) AS paymentDate,
+        sp.product_reference AS reference,
+        sdp.description AS deferralPattern,
+        sp.operator_id AS operatorId,
+        CONVERT(VARCHAR, sp.update_date, 103) AS updateDate
+      FROM s_product sp
+      JOIN s_product_category spc ON sp.product_category_code = spc.product_category_code
+      JOIN s_product_profile_type spp ON sp.product_profile_type_code = spp.product_profile_type_code
+      JOIN s_deferral_pattern sdp ON sp.deferral_pattern_code = sdp.deferral_pattern_code
+      WHERE sp.product_code = @productCode
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/product-components/:productCode/additional', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT
+        crmc.description AS crmCustomerType,
+        ISNULL(crmpc.description, '') AS crmProductCategory,
+        ISNULL(crmp.description, '') AS crmProduct,
+        ISNULL(ip.description, '') AS inventoryPool,
+        ssr.description AS revenueStatistic,
+        ISNULL(r.Description, '<None>') AS roster,
+        sss.description AS salesStatistic,
+        ISNULL(dc.Description, '<None>') AS deferralCalendar,
+        ISNULL(cps.Description, '<None>') AS customerPropertySet,
+        sp.CRMEventInd AS crmEvent,
+        'N' AS onlineHotlist,
+        sp.revenue_report_ind AS reportRevenue,
+        sp.PrintAcademyLabels AS printAcademyLabels,
+        spip.offline_freesell_ind AS offlineFreeSell,
+        CASE
+          WHEN CONVERT(VARCHAR, sp.RevenueLocationOverrideCategoryCode) = 0 THEN '<None>'
+          ELSE CONVERT(VARCHAR, sp.RevenueLocationOverrideCategoryCode)
+        END AS revenueLocationOverrideCategory
+      FROM s_product sp
+      LEFT JOIN CRMCustomerType crmc ON sp.CRMCustomerTypeCode = crmc.CRMCustomerTypeCode
+      LEFT JOIN CRMProduct crmp ON sp.CRMProductCode = crmp.CRMProductCode
+      LEFT JOIN CRMProductCategory crmpc ON crmp.CRMProductCategoryCode = crmpc.CRMProductCategoryCode
+      LEFT JOIN s_product_inventory_pool spip ON sp.product_code = spip.product_code
+      LEFT JOIN InventoryPool ip ON spip.InventoryPoolCode = ip.InventoryPoolCode
+      LEFT JOIN s_product_statistic sps ON sp.product_code = sps.product_code
+      LEFT JOIN s_statistic ssr ON sps.statistic_code = ssr.statistic_code
+      LEFT JOIN s_product_roster spr ON sp.product_code = spr.product_code
+      LEFT JOIN Roster r ON spr.rostercode = r.rostercode
+      LEFT JOIN s_statistic sss ON sp.sales_statistic_code = sss.statistic_code
+      LEFT JOIN ProductDeferralCalendar pdc ON sp.product_code = pdc.productcode
+      LEFT JOIN deferralcalendar dc ON pdc.deferralcalendarcode = dc.deferralcalendarcode
+      LEFT JOIN ProductCustomerPropertySet pcps ON sp.product_code = pcps.ProductCode
+      LEFT JOIN CustomerPropertySet cps ON pcps.CustomerPropertySetCode = cps.CustomerPropertySetCode
+      WHERE sp.product_code = @productCode
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
   } catch (err) {
     next(err);
   }

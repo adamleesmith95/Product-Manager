@@ -192,9 +192,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
               <td colSpan={columns.length}>{emptyMessage ?? 'No data'}</td>
             </tr>
           ) : (
-            sortedData.map((row) => {
-              const key = String(row[rowKey]);
-              const isSelected = selectedRowKey !== null && String(selectedRowKey) === key;
+            sortedData.map((row, idx) => {
+              const rawKey = row?.[rowKey];
+              const key = rawKey == null || rawKey === '' ? `row-${idx}` : String(rawKey);
+              const isSelected = selectedRowKey != null && String(selectedRowKey) === key;
 
               return (
                 <tr
