@@ -1,23 +1,56 @@
 @import "tailwindcss";
 
-@layer components {
-
-  /* ──────────────────────────
-   * Global 'visual viewport' height for the panes
-   * Change this one value to push the whole surface further down
-   * ────────────────────────── */
-  
+/* KEEP ONE modal sizing source-of-truth (outside @layer) */
 :root {
-    /* Estimate top UI height: tune once */
-    --pm-top-ui: 280px;
+  --pm-top-ui: 280px;
+  --pm-vh: calc(100vh - var(--pm-top-ui));
 
-    /* pane height = viewport minus top UI */
-    --pm-vh: calc(100vh - var(--pm-top-ui));
+  --pm-modal-entity-w: 1240px;
+  --pm-modal-entity-h: 860px;
+}
+
+@media (max-width: 1536px) {
+  :root {
+    --pm-modal-entity-w: 1180px;
+    --pm-modal-entity-h: 820px;
   }
+}
+@media (max-width: 1280px) {
+  :root {
+    --pm-modal-entity-w: 1080px;
+    --pm-modal-entity-h: 760px;
+  }
+}
+@media (max-width: 1024px) {
+  :root {
+    --pm-modal-entity-w: 940px;
+    --pm-modal-entity-h: 700px;
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    --pm-modal-entity-w: 94vw;
+    --pm-modal-entity-h: 88vh;
+  }
+}
 
+.pm-modal-panel-entity {
+  width: min(var(--pm-modal-entity-w), 96vw);
+  height: min(var(--pm-modal-entity-h), 92vh);
 
+  min-width: 320px;
+  min-height: 320px;
 
+  max-width: 96vw;
+  max-height: 92vh;
+}
 
+.pm-modal-scroll {
+  overflow: auto;
+}
+
+/* ADD THIS */
+@layer components {
 
   /* ──────────────────────────
    * Buttons
@@ -194,20 +227,63 @@
   /* Tables */
   .pm-table {
     @apply min-w-full text-xs text-left;
-    border-collapse: separate;
+    border-collapse: separate !important;
     border-spacing: 0;
+    /* REMOVE: table-layout: fixed !important; */
+    width: 100% !important;
+  }
+
+  /* Apply fixed layout only when colgroup exists (after sizing) */
+  .pm-table:has(colgroup) {
+    table-layout: fixed !important;
+  }
+
+  .pm-table colgroup col {
+    /* Force column widths to be respected */
+    min-width: 0 !important;
+  }
+
+  .pm-table .pm-th,
+  .pm-table .pm-td {
+    /* Force cells to respect column widths and truncate */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 0 !important; /* This forces truncation */
+    padding: 0.5rem !important;
+    box-sizing: border-box !important;
   }
 
   .pm-thead {
     @apply bg-neutral-100 text-neutral-700 font-medium;
   }
 
-  .pm-th {
+  /* .pm-th {
     @apply px-3 py-2 border-b border-gray-200 whitespace-nowrap overflow-hidden text-ellipsis;
+  } */
+
+  .pm-th {
+    @apply sticky top-0 z-10 bg-white text-left font-semibold uppercase tracking-wide;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    border-right: 1px solid #d1d5db; /* Gray divider between column headers */
   }
 
+  /* Remove border from last header column */
+  .pm-th:last-child {
+    border-right: none;
+  }
+
+  /* Table body cells - NO border-right */
   .pm-td {
-    @apply px-3 py-2 border-b border-gray-100 whitespace-nowrap overflow-hidden text-ellipsis;
+    @apply bg-white;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    /* NO border-right here */
+  }
+
+  .pm-td:last-child {
+    border-right: none;
   }
 
   .pm-row {
@@ -268,4 +344,207 @@
 
 
 
+}
+
+/* Simple sidebar item (no nesting, no carets) */
+.pm-sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pm-sidebar-item:hover {
+  background-color: #f3f4f6;
+}
+
+.pm-sidebar-item-selected {
+  background-color: #dbeafe;
+  font-weight: 500;
+}
+
+.pm-sidebar-item-selected:hover {
+  background-color: #bfdbfe;
+}
+
+.stable-scroll {
+  scrollbar-gutter: stable;
+}
+
+.pc-modal-header {
+  background: #1b1a56;
+  color: #fff;
+}
+
+.pc-modal-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.pc-modal-body {
+  padding: 16px;
+}
+
+.pc-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+
+.pc-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+
+.pc-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+
+.pc-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.pc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.pc-field {
+  min-width: 0;
+}
+
+.pc-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.pc-input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+}
+
+/* Shared modal styling */
+.pm-modal-header { background: #1b1a56; color: #fff; }
+.pm-modal-title { color: #fff; font-weight: 700; }
+.pm-modal-body { padding: 16px; }
+
+.pm-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+.pm-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+.pm-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+.pm-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+/* Backward-compatible aliases (no @apply) */
+.pc-modal-header { background: #1b1a56; color: #fff; }
+.pc-modal-title { color: #fff; font-weight: 700; }
+.pc-modal-body { padding: 16px; }
+
+.pc-tabs-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 14px;
+}
+.pc-tab {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+.pc-tab--active {
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+}
+.pc-form-shell {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.pcphc-modal-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* PHC + PC shared modal panel sizing */
+.pcphc-modal-panel {
+  /* >1536 */
+  width: min(1280px, 96vw);
+  height: min(880px, 94vh);
+  min-width: 360px;
+  min-height: 360px;
+  max-width: 96vw;
+  max-height: 94vh;
+}
+
+/* Your current screen (1463w) hits this */
+@media (max-width: 1536px) {
+  .pcphc-modal-panel {
+    width: min(1240px, 96vw);
+    height: min(860px, 94vh);
+  }
+}
+
+@media (max-width: 1280px) {
+  .pcphc-modal-panel {
+    width: min(1120px, 96vw);
+    height: min(780px, 92vh);
+  }
+}
+
+@media (max-width: 1024px) {
+  .pcphc-modal-panel {
+    width: min(940px, 96vw);
+    height: min(700px, 90vh);
+  }
+}
+
+@media (max-width: 768px) {
+  .pcphc-modal-panel {
+    width: 94vw;
+    height: 88vh;
+  }
 }

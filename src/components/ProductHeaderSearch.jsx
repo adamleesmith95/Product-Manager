@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -372,3 +371,10 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
     </div>
   );
 }
+
+// Keep ProductHeaderSearch custom top search UI (do NOT wrap with SearchToolbar)
+// because it has split-button + advanced panel behavior.
+
+// Only standardize footer action spacing if you have New/Clone there:
+// import PaneActions from './shared/PaneActions';
+// <PaneActions onNew={handleNew} onClone={handleClone} />

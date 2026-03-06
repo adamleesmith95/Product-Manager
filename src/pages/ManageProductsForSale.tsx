@@ -1,4 +1,3 @@
-
 // src/pages/ManageProductsForSale.tsx
 import { useRef, useState } from 'react';
 import DisplayCategoryBrowser from '../components/DisplayCategoryBrowser';
@@ -46,10 +45,6 @@ setDetail({ open: true, product })
    * - 'back' => jump to the opened PHC's Display Category and show that category's PHCs
    */
 
-// src/pages/ManageProductsForSale.tsx
-
-// ...inside ManageProductsForSale component...
-
 const handleCloseDetail = (mode: 'exit' | 'back', product?: ProductRow) => {
   setDetail({ open: false, product: undefined });
 
@@ -88,23 +83,14 @@ const handleCloseDetail = (mode: 'exit' | 'back', product?: ProductRow) => {
 <Modal
   open={detail.open && !!detail.product}
   onClose={() => handleCloseDetail('exit', lastOpenedPhcRef.current ?? detail.product)}
-  title={
-    detail.product
-      ? `Manage Product — ${detail.product.description ?? detail.product.code}`
-      : 'Manage Product'
-  }
-  containerId="phc-surface"
-
-  /* Header stays indigo; title text white */
-  headerClassName="bg-indigo-950"   // controls the header bar
-  titleClassName="text-white"       // controls only the title text
+  title={detail.product ? `Manage Product — ${detail.product.description ?? detail.product.code}` : 'Manage Product'}
+  headerClassName="pcphc-modal-header"
+  titleClassName="pcphc-modal-title"
+  panelClassName="pcphc-modal-panel"
 >
-
-
   {detail.product && (
     <ManageProductsForSaleLegacy
       product={detail.product}
-      // Legacy only takes onClose; we map it to "Back" behavior
       onClose={() => handleCloseDetail('back', detail.product)}
     />
   )}

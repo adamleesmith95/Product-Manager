@@ -1,0 +1,240 @@
+import React, { useRef, useState, useMemo } from 'react';
+import { useTableColumnSizing } from '../../hooks/useTableColumnSizing';
+
+export type ColumnDefinition<T> = {
+  key: keyof T;
+  label: string;
+  width?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  align?: 'left' | 'center' | 'right';
+  render?: (value: any, row: T) => React.ReactNode;
+  className?: string;
+  sortable?: boolean;
+  sortType?: 'string' | 'number' | 'date';
+};
+
+type SortConfig = {
+  key: string;
+  direction: 'asc' | 'desc';
+} | null;
+
+type DataTableProps<T> = {
+  columns: ColumnDefinition<T>[];
+  data?: T[];              // make optional
+  rows?: T[];              // add optional compatibility prop
+  rowKey: keyof T;
+  storageKey: string;
+  onRowClick?: (row: T) => void;
+  onRowDoubleClick?: (row: T) => void;
+  selectedRowKey?: string | number | null;
+  emptyMessage?: string;
+  className?: string;
+  defaultSort?: { key: keyof T; direction: 'asc' | 'desc' };
+  loading?: boolean;
+  autoSizeDeps?: ReadonlyArray<unknown>;
+};
+
+export function DataTable<T>(props: DataTableProps<T>) {
+  const {
+    columns,
+    rowKey,
+    storageKey,
+    selectedRowKey,
+    onRowClick,
+    onRowDoubleClick,
+    emptyMessage,
+    className = '',
+    loading,
+    autoSizeDeps = [],
+  } = props;
+
+  // Accept either prop name: data or rows
+  const data: T[] = Array.isArray(props.data)
+    ? props.data
+    : Array.isArray(props.rows)
+    ? props.rows
+    : [];
+
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(
+    props.defaultSort ? { key: String(props.defaultSort.key), direction: props.defaultSort.direction } : null
+  );
+
+  // Build columnCaps object
+  const columnCaps = useMemo(() => {
+    return columns.reduce((acc, col, idx) => {
+      if (col.minWidth || col.maxWidth || col.width) {
+        acc[idx] = {
+          min: col.minWidth,
+          max: col.maxWidth,
+          seed: col.width, // Use width as the seed/default size
+        };
+      }
+      return acc;
+    }, {} as Record<number, { min?: number; max?: number; seed?: number }>);
+  }, [columns]);
+
+  const { ColGroup, startResize, autoFitColumn } = useTableColumnSizing(tableRef, {
+    storageKey,
+    sampleRows: 300,
+    minPx: 5,
+    maxPx: 800,
+    autoSizeDeps: [data.length, columns.length, ...autoSizeDeps],
+    columnCaps,
+  });
+
+  // Sorting logic
+  const sortedData = useMemo(() => {
+    if (!sortConfig) return data;
+
+    const sorted = [...data];
+    const column = columns.find(col => String(col.key) === sortConfig.key);
+    const sortType = column?.sortType || 'string';
+
+    sorted.sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      // Handle null/undefined
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      let comparison = 0;
+
+      if (sortType === 'number') {
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+        comparison = aNum - bNum;
+      } else if (sortType === 'date') {
+        const aDate = new Date(aVal).getTime();
+        const bDate = new Date(bVal).getTime();
+        comparison = aDate - bDate;
+      } else {
+        // string
+        comparison = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
+      }
+
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [data, sortConfig, columns]);
+
+  const handleSort = (key: keyof T) => {
+    const column = columns.find(col => col.key === key);
+    if (!column?.sortable) return;
+
+    setSortConfig(current => {
+      if (!current || current.key !== String(key)) {
+        return { key: String(key), direction: 'asc' };
+      }
+      if (current.direction === 'asc') {
+        return { key: String(key), direction: 'desc' };
+      }
+      return null; // Clear sort
+    });
+  };
+
+  const getSortIndicator = (key: keyof T) => {
+    if (!sortConfig || sortConfig.key !== String(key)) return null;
+    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
+  };
+
+  const formatCellValue = (value: unknown): React.ReactNode => {
+    if (value == null) return '';
+    if (React.isValidElement(value)) return value;
+    if (typeof value === 'string' || typeof value === 'number') return value;
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (value instanceof Date) return value.toISOString();
+    return String(value);
+  };
+
+  return (
+    <div className="relative" aria-busy={loading}>
+      <table className={`pm-table ${className}`} ref={tableRef}>
+        {/* Remove the style prop entirely - let CSS handle table-layout */}
+        {ColGroup}
+        <thead className="pm-thead pm-thead-sticky">
+          <tr>
+            {columns.map((col, idx) => {
+              if (!col || !col.key) return null;
+              
+              return (
+                <th key={String(col.key)} className={`pm-th relative ${col.className || ''}`}>
+                  <div
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort(col.key)}
+                  >
+                    <span>{col.label}</span>
+                    {col.sortable && sortConfig?.key === String(col.key) && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Column resizer */}
+                  <span
+                    className="pm-col-resizer"
+                    onMouseDown={(e) => startResize(e, idx)}
+                    onDoubleClick={() => autoFitColumn(idx)}
+                  />
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length}>{emptyMessage ?? 'No data'}</td>
+            </tr>
+          ) : (
+            sortedData.map((row, idx) => {
+              const rawKey = row?.[rowKey];
+              const key = rawKey == null || rawKey === '' ? `row-${idx}` : String(rawKey);
+              const isSelected = selectedRowKey != null && String(selectedRowKey) === key;
+
+              return (
+                <tr
+                  key={key}
+                  id={`row-${key}`}
+                  className={`pm-row ${isSelected ? 'pm-row--selected' : ''} ${
+                    onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
+                  }`}
+                  onClick={() => onRowClick?.(row)}
+                  onDoubleClick={() => onRowDoubleClick?.(row)}
+                >
+                  {columns.map((col) => {
+                    const value = row[col.key] as unknown;
+                    const alignClass =
+                      col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
+                    const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
+
+                    return (
+                      <td key={String(col.key)} className={cellClassName}>
+                        {col.render ? col.render(value, row) : formatCellValue(value)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+      {loading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 font-medium">Loading data...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default DataTable;

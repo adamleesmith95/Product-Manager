@@ -1,4 +1,3 @@
-
 /* eslint-disable no-console */
 const fs = require('fs');
 const path = require('path');
@@ -72,8 +71,18 @@ if (connectionString) {
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const componentsRoutes = require('./routes/components.cjs');
+const productsRoutes = require('./routes/products.cjs');
+const displayCategoriesRoutes = require('./routes/displayCategories.cjs');
+const displayGroupsRoutes = require('./routes/displayGroups.cjs');
 app.use(cors()); // dev only
 app.use(express.json());
+
+app.use('/api', componentsRoutes);
+app.use('/api', productsRoutes);
+app.use('/api', displayCategoriesRoutes);
+app.use('/api/display-groups', displayGroupsRoutes); // <-- change this line
+
 
 /** Connection pool */
 const pool = new sql.ConnectionPool(poolConfig);
@@ -360,14 +369,16 @@ SELECT
   sph.security_level [Security Level],
   sph.price_change_level [Price Change],
   sph.commission_ind [Commission],
-  CASE WHEN sphmf.mm_function_code = 35 THEN 'Y' ELSE '' END AS [Pass Comp],
-  CASE WHEN sphmf.mm_function_code = 10 THEN 'Y' ELSE '' END AS [Ticket Comp],
-  CASE WHEN sphmf.mm_function_code = 12 THEN 'Y' ELSE '' END AS [Other Comp],
-  CASE WHEN sphmf.mm_function_code = 40 THEN 'Y' ELSE '' END AS [Pass Trade],
-  CASE WHEN sphmf.mm_function_code = 42 THEN 'Y' ELSE '' END AS [Ticket Trade],
-  CASE WHEN sphmf.mm_function_code = 45 THEN 'Y' ELSE '' END AS [Other Trade],
+
+  mmf.[Pass Comp],
+  mmf.[Ticket Comp],
+  mmf.[Other Comp],
+  mmf.[Pass Trade],
+  mmf.[Ticket Trade],
+  mmf.[Other Trade],
+
   sph.identify_customer_ind [ID Customer],
-  CASE WHEN sphmf.mm_function_code = 80 THEN 'Y' ELSE '' END AS [Coupon],
+  mmf.[Coupon],
   '' [Reservation],
   slob.description [Primary LOB],
   sph.primary_lob_code [Primary LOB Code],
@@ -435,22 +446,47 @@ LEFT JOIN SalesReportCategory src
   ON sph.SalesReportCategoryCode = src.SalesReportCategoryCode
 LEFT JOIN s_internet_authorization sia
   ON sphi.internet_authorization_code = sia.internet_authorization_code
-LEFT JOIN s_product_header_mm_function sphmf
-  ON sph.product_header_code = sphmf.product_header_code
-LEFT JOIN s_system_function sf
-  ON sphmf.mm_function_code = sf.system_function_code
-LEFT JOIN s_product_header_advance_days sphad
-  ON sph.product_header_code = sphad.product_header_code
 LEFT JOIN SalesReportGroup srg
   ON src.SalesReportGroupCode = srg.SalesReportGroupCode
-LEFT JOIN s_product_header_resort_units_header sphruh
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MAX(CASE WHEN mm_function_code = 35 THEN 'Y' ELSE '' END) AS [Pass Comp],
+    MAX(CASE WHEN mm_function_code = 10 THEN 'Y' ELSE '' END) AS [Ticket Comp],
+    MAX(CASE WHEN mm_function_code = 12 THEN 'Y' ELSE '' END) AS [Other Comp],
+    MAX(CASE WHEN mm_function_code = 40 THEN 'Y' ELSE '' END) AS [Pass Trade],
+    MAX(CASE WHEN mm_function_code = 42 THEN 'Y' ELSE '' END) AS [Ticket Trade],
+    MAX(CASE WHEN mm_function_code = 45 THEN 'Y' ELSE '' END) AS [Other Trade],
+    MAX(CASE WHEN mm_function_code = 80 THEN 'Y' ELSE '' END) AS [Coupon]
+  FROM s_product_header_mm_function
+  GROUP BY product_header_code
+) mmf
+  ON mmf.product_header_code = sph.product_header_code
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MIN(min_advance_days) AS min_advance_days,
+    MAX(max_advance_days) AS max_advance_days
+  FROM s_product_header_advance_days
+  GROUP BY product_header_code
+) sphad
+  ON sph.product_header_code = sphad.product_header_code
+
+LEFT JOIN (
+  SELECT
+    product_header_code,
+    MIN(relation_id) AS relation_id
+  FROM s_product_header_resort_units_header
+  GROUP BY product_header_code
+) sphruh
   ON sph.product_header_code = sphruh.product_header_code
+
 WHERE sdc.active_ind = 'Y'
   AND (@active IS NULL OR sph.active_ind = @active)
-  
   AND (@lob IS NULL OR sph.primary_lob_code = @lob)
   AND (@displayGroup IS NULL OR sdg.display_group_code = @displayGroup)
-
   AND (@cat IS NULL OR sdc.display_category_code = @cat)
   AND (@description IS NULL OR sph.description LIKE '%' + @description + '%')
   AND (@code IS NULL OR sph.product_header_code = @code)
@@ -466,106 +502,6 @@ ORDER BY [Display Order]
 OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
 `;
 
-
-/** -------------------------------------------
- * Product Components: Available Components (Tree)
- * GET /api/components/tree
- * ------------------------------------------- */
-app.get('/api/components/tree', async (_req, res) => {
-  await poolConnect;
-  try {
-    const result = await pool.request().query(`
-      SELECT
-          spg.product_group_code,
-          spg.description        AS product_group_desc,
-          spg.display_order      AS product_group_order,
-
-          spc.product_category_code,
-          spc.description        AS product_category_desc,
-          spc.display_order      AS product_category_order,
-
-          sp.product_code        AS component_code,
-          sp.description         AS component_desc,
-          sp.display_order       AS component_order
-      FROM s_product_group spg
-      JOIN s_product_category spc
-          ON spg.product_group_code = spc.product_group_code
-         AND spg.active_ind = 'Y'
-         AND spc.active_ind = 'Y'
-      JOIN s_product sp
-          ON spc.product_category_code = sp.product_category_code
-         AND sp.active_ind = 'Y'
-         AND sp.display_ind = 'Y'
-      ORDER BY
-          spg.display_order,
-          spg.product_group_code,
-          spg.description,
-          spc.display_order,
-          spc.product_category_code,
-          spc.description,
-          sp.display_order,
-          sp.product_code,
-          sp.description;
-    `);
-
-    const rows = result.recordset;
-
-    // Shape to hierarchical JSON the UI expects:
-    // [{ groupCode, label, order, categories: [{ categoryCode, label, order, components: [{code,label,order}] }] }]
-    const groupMap = new Map();
-    for (const r of rows) {
-      let g = groupMap.get(r.product_group_code);
-      if (!g) {
-        g = {
-          groupCode: r.product_group_code,
-          label: r.product_group_desc,
-          order: r.product_group_order,
-          categories: [],
-          _catMap: new Map(),
-        };
-        groupMap.set(r.product_group_code, g);
-      }
-
-      let c = g._catMap.get(r.product_category_code);
-      if (!c) {
-        c = {
-          categoryCode: r.product_category_code,
-          label: r.product_category_desc,
-          order: r.product_category_order,
-          components: [],
-        };
-        g._catMap.set(r.product_category_code, c);
-        g.categories.push(c);
-      }
-
-      c.components.push({
-        code: r.component_code,
-        label: r.component_desc,
-        order: r.component_order,
-        active_ind: r.component_active,
-        display_ind: r.component_display,
-        
-
-        units: r.component_units,
-        sale_units: r.component_sale_units,
-        sales_statistic_code: r.component_sales_statistic_code,
-        product_profile_type_code: r.component_product_profile_type_code
-
-
-      });
-    }
-
-    const tree = Array.from(groupMap.values()).map(g => {
-      delete g._catMap;
-      return g;
-    });
-
-    res.json(tree);
-  } catch (err) {
-    console.error('DB_ERROR (/api/components/tree):', err);
-    res.status(500).json({ error: 'DB_ERROR', detail: err.message });
-  }
-});
 
 /** -------------------------------------------
  * Product Components: Assigned to a Product PHC
