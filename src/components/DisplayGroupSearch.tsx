@@ -39,6 +39,7 @@ export default function DisplayGroupSearch({
 }: Props) {
   const [filters, setFilters] = useState({ code: '', description: '' });
   const [appliedFilters, setAppliedFilters] = useState({ code: '', description: '' });
+  const [selectedGroupCode, setSelectedGroupCode] = useState<string | null>(null);
 
   const fetchDisplayGroups = useCallback(async (signal) => {
     const res = await fetch('/api/display-groups', { signal });
@@ -137,6 +138,17 @@ export default function DisplayGroupSearch({
             autoSizeDeps={[tableRows.length]}
             emptyMessage="No display groups found"
             className="w-full"
+            selectedRowKey={selectedGroupCode}
+            onRowClick={(row: any) => {
+              const code = String(row?.code ?? '');
+              setSelectedGroupCode(code);
+              onSelectGroup?.(row);
+            }}
+            onRowDoubleClick={(row: any) => {
+              const code = String(row?.code ?? '');
+              setSelectedGroupCode(code);
+              onOpenGroup?.(row);
+            }}
           />
         </div>
       }

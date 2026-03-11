@@ -38,4 +38,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/:code', async (req, res) => {
+  try {
+    const code = String(req.params.code ?? '').trim();
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('code', code);
+
+    const result = await request.query(`
+      SELECT TOP 1
+        sdg.display_group_code AS code,
+        sdg.description AS description,
+        sdg.active_ind AS active,
+        sdg.display_order AS displayOrder,
+        sdg.operator_id AS operatorId,
+        CONVERT(VARCHAR, sdg.update_date, 103) AS updated
+      FROM s_display_group sdg
+      WHERE sdg.display_group_code = @code
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
+  } catch (err) {
+    console.error('[display-groups] GET /:code failed', err);
+    res.status(500).json({ error: 'Failed to load display group detail' });
+  }
+});
+
 module.exports = router;

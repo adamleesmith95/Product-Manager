@@ -1,0 +1,58 @@
+import React from 'react';
+import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+
+const EMPTY = {
+  code: '',
+  label: '',
+  displayGroupCode: '',
+  displayGroup: '',
+  active: '',
+  order: '',
+  operatorId: '',
+  updated: '',
+};
+
+function ReadonlyField({ label, value }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-gray-600">{label}</label>
+      <input
+        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-gray-50"
+        value={value ?? ''}
+        readOnly
+      />
+    </div>
+  );
+}
+
+export default function DC_GeneralTab({ categoryCode, isActive }) {
+  const { data, loading, error } = useModalCachedFetch(
+    `dc-general-${categoryCode}`,
+    async () => {
+      const res = await fetch(`/api/display-categories/${categoryCode}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return { ...EMPTY, ...(json?.row ?? {}) };
+    },
+    !!categoryCode && isActive
+  );
+
+  const row = data ?? EMPTY;
+
+  if (!categoryCode) return <div className="p-3 text-sm text-gray-500">No display category selected.</div>;
+  if (loading) return <div className="p-3 text-sm">Loading…</div>;
+  if (error) return <div className="p-3 text-sm text-red-600">{String(error)}</div>;
+
+  return (
+    <div className="grid grid-cols-2 gap-3 p-4">
+      <ReadonlyField label="Display Category Code" value={row.code} />
+      <ReadonlyField label="Description" value={row.label} />
+      <ReadonlyField label="Display Group Code" value={row.displayGroupCode} />
+      <ReadonlyField label="Display Group" value={row.displayGroup} />
+      <ReadonlyField label="Active" value={row.active} />
+      <ReadonlyField label="Display Order" value={row.order} />
+      <ReadonlyField label="Operator ID" value={row.operatorId} />
+      <ReadonlyField label="Updated" value={row.updated} />
+    </div>
+  );
+}

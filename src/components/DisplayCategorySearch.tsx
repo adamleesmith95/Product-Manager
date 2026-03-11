@@ -289,6 +289,16 @@ export default function DisplayCategorySearch({
             autoSizeDeps={[tableRows.length]}
             className="w-full"
             selectedRowKey={selectedCategoryCode}
+            onRowClick={(row: any) => {
+              const code = String(row?.code ?? '');
+              setSelectedCategoryCode(code);
+              onSelectCategory?.(row);
+            }}
+            onRowDoubleClick={(row: any) => {
+              const code = String(row?.code ?? '');
+              setSelectedCategoryCode(code);
+              onOpenCategory?.(row);
+            }}
             emptyMessage={
               !isResultsMode && !selectedGroupObj
                 ? '← Select a display group to view categories.'

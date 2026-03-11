@@ -66,4 +66,36 @@ router.get('/display-categories/tree', async (req, res, next) => {
   }
 });
 
+/** GET /api/display-categories/:code
+ * Returns a specific Display Category
+ */
+router.get('/display-categories/:code', async (req, res, next) => {
+  try {
+    const code = String(req.params.code ?? '').trim();
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('code', code);
+
+    const result = await request.query(`
+      SELECT TOP 1
+        sdc.display_category_code AS code,
+        sdc.description AS label,
+        sdc.display_group_code AS displayGroupCode,
+        sdg.description AS displayGroup,
+        sdc.active_ind AS active,
+        sdc.display_order AS [order],
+        sdc.operator_id AS operatorId,
+        CONVERT(VARCHAR, sdc.update_date, 103) AS updated
+      FROM s_display_category sdc
+      LEFT JOIN s_display_group sdg
+        ON sdg.display_group_code = sdc.display_group_code
+      WHERE sdc.display_category_code = @code
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

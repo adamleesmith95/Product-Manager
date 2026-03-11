@@ -106,6 +106,14 @@
   overflow: auto;
 }
 
+.pcphc-modal-header {
+  background-color: #1e1b4b; /* indigo-950 */
+}
+.pcphc-modal-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
 @media (max-width: 1024px) {
   .pc-inline-layout {
     grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr);
