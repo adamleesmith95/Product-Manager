@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useModalSession } from './context/ModalSessionContext';
 import ModalTabButton from './components/shared/ModalTabButton';
-import LabeledInput from './components/LabeledInput';
-import LabeledDateInput from './components/LabeledDateInput';
-import CheckRow from './components/CheckRow';
 
 // Modularized tab views
 import GeneralTab from './tabs/GeneralTab';
@@ -18,7 +15,6 @@ import ProductPricingTab from './tabs/ProductPricingTab';
 const topTabs = ['General', 'Properties', 'Linked Products', 'Comments'];
 const bottomTabs = ['Sale Locations', 'Product Components', 'Accounting', 'Product Pricing'];
 
-// ADD
 function initFormFromProduct(product) {
   const S = (v) => v ?? '';
   const N = (v) => v ?? '';
@@ -26,30 +22,31 @@ function initFormFromProduct(product) {
 
   return {
     // General
-    code:                   S(product?.code),
-    description:            S(product?.description),
-    displayOrder:           N(product?.displayOrder),
-    maxQuantity:            N(product?.maxQuantity),
-    receiptLabel:           S(product?.receiptLabel),
-    operatorId:             S(product?.operatorId),
-    updateDate:             S(product?.updateDate),
-    priceChangeLevel:       S(product?.priceChangeLevel),
-    securityLevel:          S(product?.securityLevel),
-    validateCustomerSp:     S(product?.validateCustomerSp),
-    customerAgeMin:         N(product?.customerAgeMin),
-    customerAgeMax:         N(product?.customerAgeMax),
-    displayLevel:           S(product?.displayLevel),
+    code:                    S(product?.code),
+    description:             S(product?.description),
+    displayOrder:            N(product?.displayOrder),
+    maxQuantity:             N(product?.maxQuantity),
+    receiptLabel:            S(product?.receiptLabel),
+    operatorId:              S(product?.operatorId),
+    updateDate:              S(product?.updateDate),
+    priceChangeLevel:        S(product?.priceChangeLevel),
+    securityLevel:           S(product?.securityLevel),
+    validateCustomerSP:      S(product?.validateCustomerSp ?? product?.validateCustomerSP),
+    customerAgeMin:          N(product?.customerAgeMin),
+    customerAgeMax:          N(product?.customerAgeMax),
+    displayLevel:            S(product?.displayLevel),
 
-    displayCategory:        S(product?.displayCategory),
-    displayCategoryCode:    S(product?.displayCategoryCode),
-    primaryLob:             S(product?.primaryLob),
-    primaryLobCode:         S(product?.primaryLobCode),
-    auditCategory:          S(product?.auditCategory),
-    auditCategoryCode:      S(product?.auditCategoryCode),
-    salesReportGroup:       S(product?.salesReportGroup),
-    salesReportGroupCode:   S(product?.salesReportGroupCode),
-    salesReportCategory:    S(product?.salesReportCategory),
-    salesReportCategoryCode:S(product?.salesReportCategoryCode),
+    // Selects — store both code and label
+    displayCategory:         S(product?.displayCategory),
+    displayCategoryCode:     S(product?.displayCategoryCode),
+    primaryLob:              S(product?.primaryLob),
+    primaryLobCode:          S(product?.primaryLobCode ?? product?.lobCode),
+    auditCategory:           S(product?.auditCategory),
+    auditCategoryCode:       S(product?.auditCategoryCode),
+    salesReportGroup:        S(product?.salesReportGroup),
+    salesReportGroupCode:    S(product?.salesReportGroupCode),
+    salesReportCategory:     S(product?.salesReportCategory),
+    salesReportCategoryCode: S(product?.salesReportCategoryCode),
 
     generalFlags: {
       active:                 Y(product?.active),
@@ -66,63 +63,66 @@ function initFormFromProduct(product) {
     },
 
     // PropertiesTab — Mt Money
-    passComp:           product?.passComp    ?? false,
-    ticketComp:         product?.ticketComp  ?? false,
-    productComp:        product?.productComp ?? false,
-    passTrade:          product?.passTrade   ?? false,
-    ticketTrade:        product?.ticketTrade ?? false,
-    productTrade:       product?.productTrade ?? false,
-    coupon:             product?.coupon      ?? false,
+    passComp:            product?.passComp    ?? false,
+    ticketComp:          product?.ticketComp  ?? false,
+    productComp:         product?.productComp ?? false,
+    passTrade:           product?.passTrade   ?? false,
+    ticketTrade:         product?.ticketTrade ?? false,
+    productTrade:        product?.productTrade ?? false,
+    coupon:              product?.coupon      ?? false,
 
     // PropertiesTab — Order
-    depositRequired:    product?.depositRequired ?? false,
-    allowDelivery:      product?.allowDelivery   ?? false,
-    pickupLocationType: S(product?.pickupLocationType),
+    depositRequired:     product?.depositRequired ?? false,
+    allowDelivery:       product?.allowDelivery   ?? false,
+    pickupLocationType:  S(product?.pickupLocationType),
 
     // PropertiesTab — Internet
-    shippingCategory:     S(product?.shippingCategory),
-    moreInfoUrl:          S(product?.moreInfoUrl),
-    imageURL:             S(product?.imageURL),
-    imageHeight:          N(product?.imageHeight),
-    imageWidth:           N(product?.imageWidth),
-    advanceDays:          N(product?.advanceDays),
-    units:                N(product?.units),
-    productUnitUOM:       S(product?.productUnitUOM),
-    featured:             product?.featured ?? false,
-    internetAuthorization:S(product?.internetAuthorization),
-    specialStartDate:     S(product?.specialStartDate),
-    specialEndDate:       S(product?.specialEndDate),
-    specialText:          S(product?.specialText),
-    advanceDayRangeMin:   N(product?.advanceDayRangeMin),
-    advanceDayRangeMax:   N(product?.advanceDayRangeMax),
+    shippingCategory:      S(product?.shippingCategory),
+    moreInfoUrl:           S(product?.moreInfoUrl),
+    imageURL:              S(product?.imageURL),
+    imageHeight:           N(product?.imageHeight),
+    imageWidth:            N(product?.imageWidth),
+    advanceDays:           N(product?.advanceDays),
+    units:                 N(product?.units),
+    productUnitUOM:        S(product?.productUnitUOM),
+    featured:              product?.featured ?? false,
+    internetAuthorization: S(product?.internetAuthorization),
+    specialStartDate:      S(product?.specialStartDate),
+    specialEndDate:        S(product?.specialEndDate),
+    specialText:           S(product?.specialText),
+    advanceDayRangeMin:    N(product?.advanceDayRangeMin ?? product?.minAdvanceDays),
+    advanceDayRangeMax:    N(product?.advanceDayRangeMax ?? product?.maxAdvanceDays),
   };
 }
 
 export default function ManageProductsForSale({ product, onClose }) {
   const { tabForms, setTabForm, getDataCache, setDataCache } = useModalSession();
 
-  // Use product code as cache key so switching products always resets
   const productKey = product?.code ?? product?.phcCode ?? '__new__';
 
   const [form, setForm] = useState(() => {
-    // Only restore cached form if it belongs to THIS product
     const cached = tabForms['general'];
     return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
   });
 
-  const [topTab, setTopTab]     = useState(() => tabForms['topTab']    ?? 'General');
+  const [topTab, setTopTab]       = useState(() => tabForms['topTab']    ?? 'General');
   const [bottomTab, setBottomTab] = useState(() => tabForms['bottomTab'] ?? 'Sale Locations');
-  const [section, setSection]   = useState(() => tabForms['section']   ?? 'primary');
+  const [section, setSection]     = useState(() => tabForms['section']   ?? 'primary');
 
   // Reset form when product changes
   useEffect(() => {
     const cached = tabForms['general'];
-    const fresh = initFormFromProduct(product);
     if (!cached || cached.code !== productKey) {
+      const fresh = initFormFromProduct(product);
       setForm(fresh);
       setTabForm('general', fresh);
     }
   }, [productKey]);
+
+  // Persist active tab state
+  useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
+  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
+  useEffect(() => setTabForm('section',   section),   [section]);
 
   const update = (key, value) => {
     setForm((prev) => {
@@ -132,48 +132,34 @@ export default function ManageProductsForSale({ product, onClose }) {
     });
   };
 
-  // hydrateForm — fixes missing setTabForm call
+  // Single declaration of hydrateForm
   function hydrateForm(row) {
     const fresh = initFormFromProduct(row);
     setForm(fresh);
     setTabForm('general', fresh);
   }
 
-  // persist active tabs
-  useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
-  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
-  useEffect(() => setTabForm('section',   section),   [section]);
+  const phc = String(
+    product?.product_header_code ??
+    product?.productHeaderCode ??
+    product?.ProductHeaderCode ??
+    product?.phcCode ??
+    product?.code ??
+    ''
+  );
 
-  // Resolve the PHC once and pass it to tabs that need it
-  const phc =
-    String(
-      product?.product_header_code ??
-      product?.productHeaderCode ??
-      product?.ProductHeaderCode ??
-      product?.phcCode ??
-      product?.code ??
-      ''
-    );
-
+  // Prefetch product components
   useEffect(() => {
-    const phc = product?.code ?? product?.phcCode;
     if (!phc) return;
-
     const key = `product-components-${phc}`;
-    if (getDataCache(key)) return; // already cached
+    if (getDataCache(key)) return;
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
     fetch(`${API_BASE}/api/products/${phc}/components`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setDataCache(key, data))
       .catch(() => {});
-  }, [product?.code, product?.phcCode, getDataCache, setDataCache]);
-
-  function hydrateForm(row) {
-    const fresh = initFormFromProduct(row);
-    setForm(fresh);
-    setTabForm('general', fresh);
-  }
+  }, [phc]);
 
   if (!product) {
     return (
@@ -183,33 +169,15 @@ export default function ManageProductsForSale({ product, onClose }) {
     );
   }
 
-  const handleBackToCategories = () => {
-    try {
-      if (typeof onClose === 'function') onClose();
-      setTimeout(() => {
-        const fn = window && window['goBackToCategories'];
-        if (typeof fn === 'function') fn();
-        else window.dispatchEvent(new CustomEvent('go-back-to-categories'));
-      }, 0);
-    } catch (err) {
-      console.error('[Detail] Back to Categories failed:', err);
-    }
-  };
-
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden p-4 gap-3">
-
-      {/* Tab rows - fixed height, never shrink */}
       <div role="tablist" className="shrink-0">
         <div className="pm-tab-row">
           {topTabs.map((tab) => (
             <ModalTabButton
               key={tab}
               active={topTab === tab && section === 'primary'}
-              onClick={() => {
-                setSection('primary');
-                setTopTab(tab);
-              }}
+              onClick={() => { setSection('primary'); setTopTab(tab); }}
             >
               {tab}
             </ModalTabButton>
@@ -220,10 +188,7 @@ export default function ManageProductsForSale({ product, onClose }) {
             <ModalTabButton
               key={tab}
               active={bottomTab === tab && section === 'module'}
-              onClick={() => {
-                setSection('module');
-                setBottomTab(tab);
-              }}
+              onClick={() => { setSection('module'); setBottomTab(tab); }}
             >
               {tab}
             </ModalTabButton>
@@ -231,14 +196,13 @@ export default function ManageProductsForSale({ product, onClose }) {
         </div>
       </div>
 
-      {/* Tab content - must flex-1 and min-h-0 to fill remaining space */}
       <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
         {section === 'primary' ? (
           <div className="h-full min-h-0 overflow-auto p-4">
-            {topTab === 'General' && <GeneralTab form={form} update={update} />}
-            {topTab === 'Properties' && <PropertiesTab form={form} update={update} />}
+            {topTab === 'General'         && <GeneralTab form={form} update={update} />}
+            {topTab === 'Properties'      && <PropertiesTab form={form} update={update} />}
             {topTab === 'Linked Products' && <LinkedProductsTab form={form} update={update} />}
-            {topTab === 'Comments' && <CommentsTab form={form} update={update} />}
+            {topTab === 'Comments'        && <CommentsTab form={form} update={update} />}
           </div>
         ) : (
           <div className="h-full min-h-0 overflow-hidden">
@@ -251,9 +215,7 @@ export default function ManageProductsForSale({ product, onClose }) {
               <div className="h-full min-h-0 overflow-hidden p-4">
                 <ProductComponentsTab
                   productPhc={phc}
-                  onComponentsChanged={() => {
-                    // later: notify Accounting to refresh required rows
-                  }}
+                  onComponentsChanged={() => {}}
                 />
               </div>
             )}

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import LabeledInput from '../components/LabeledInput';
 import LabeledSelect from '../components/LabeledSelect';
@@ -23,11 +22,11 @@ function bindSelect(baseKey, options) {
   const codeKey = `${baseKey}Code`;
   const labelKey = baseKey;
   return {
-    value: form[codeKey] ?? '',
+    value: String(form[codeKey] ?? ''),
     onChange: (e) => {
-      const v = e.target.value;
+      const v = String(e?.target?.value ?? '');
       update(codeKey, v);
-      const o = options.find((x) => x.value === v);
+      const o = options.find((x) => String(x.value) === v);
       update(labelKey, o?.label ?? '');
     },
   };
