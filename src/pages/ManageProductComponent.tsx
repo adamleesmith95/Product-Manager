@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import ProductComponentSearch from '../components/ProductComponentSearch';
+import ProductComponentInlinePanel from '../components/ProductComponentInlinePanel';
+import '../styles/pc-inline-preview.css';
+
+// keep these imports because they are referenced in the non-inline branch
 import Modal from '../components/Modal';
 import PC_GeneralTab from '../tabs/PC_GeneralTab';
 import PC_AdditionalTab from '../tabs/PC_AdditionalTab';
+import ModalTabButton from '../components/shared/ModalTabButton';
 
 export default function ManageProductComponent() {
+  const USE_INLINE_PREVIEW = true;
+  const [selectedProductCode, setSelectedProductCode] = useState<number | null>(null);
+
   const [detail, setDetail] = useState<{ open: boolean; productCode: number | null }>({
     open: false,
     productCode: null,
@@ -12,20 +20,27 @@ export default function ManageProductComponent() {
   const [activeTab, setActiveTab] = useState<'general' | 'additional'>('general');
 
   const handleOpenProduct = (row: any) => {
-    setDetail({ open: true, productCode: Number(row.productCode ?? row.code) || null });
+    const code = Number(row?.code ?? row?.productCode);
+    console.log('[handleOpenProduct] setting detail open=true, code=', code);
+    setDetail({ open: true, productCode: code });
     setActiveTab('general');
   };
 
   const handleClose = () => setDetail((s) => ({ ...s, open: false }));
 
   return (
-    <>
-      <div className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
-        <div className="flex items-center justify-between bg-indigo-950 px-4 py-2 rounded-t-md">
-          <h2 className="text-white text-lg font-semibold">Product Component Search</h2>
+    <div className="w-full min-w-0 overflow-hidden">
+      {USE_INLINE_PREVIEW && (
+        <div className="bg-white shadow-md rounded-md border border-gray-300 min-h-0">
+          <ProductComponentSearch
+            onSelectProduct={(row: any) =>
+              setSelectedProductCode(Number(row?.code ?? row?.productCode) || null)
+            }
+            onOpenProduct={(row: any) => handleOpenProduct(row)}
+            inlineDetailPanel={<ProductComponentInlinePanel productCode={selectedProductCode} />}
+          />
         </div>
-        <ProductComponentSearch onOpenProduct={handleOpenProduct} />
-      </div>
+      )}
 
       <Modal
         open={detail.open}
@@ -37,32 +52,26 @@ export default function ManageProductComponent() {
       >
         <div className="pm-tab-host">
           <div className="pm-tabs-row">
-            <button
-              type="button"
-              className={`pm-tab ${activeTab === 'general' ? 'pm-tab--active' : ''}`}
+            <ModalTabButton
+              active={activeTab === 'general'}
               onClick={() => setActiveTab('general')}
             >
               General
-            </button>
-            <button
-              type="button"
-              className={`pm-tab ${activeTab === 'additional' ? 'pm-tab--active' : ''}`}
+            </ModalTabButton>
+            <ModalTabButton
+              active={activeTab === 'additional'}
               onClick={() => setActiveTab('additional')}
             >
               Additional
-            </button>
+            </ModalTabButton>
           </div>
 
           <div className="pm-tab-body pm-form-shell">
-            {activeTab === 'general' && (
-              <PC_GeneralTab productCode={detail.productCode} isActive />
-            )}
-            {activeTab === 'additional' && (
-              <PC_AdditionalTab productCode={detail.productCode} isActive />
-            )}
+            {activeTab === 'general' && <PC_GeneralTab productCode={detail.productCode} isActive />}
+            {activeTab === 'additional' && <PC_AdditionalTab productCode={detail.productCode} isActive />}
           </div>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }

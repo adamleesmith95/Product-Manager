@@ -1,12 +1,12 @@
 import React from "react";
 
 type Props = {
-  title: string;
+  title?: string;
   onResetColumns?: () => void;
   rightActions?: React.ReactNode;
 };
 
-export default function PaneHeader({ title, onResetColumns, rightActions }: Props) {
+export default function PaneHeader({ title = '', onResetColumns, rightActions }: Props) {
   return (
     <>
       <div className="pm-pane-title">{title}</div>

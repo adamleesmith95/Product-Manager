@@ -1,5 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
+import ModalTabButton from './components/shared/ModalTabButton';
 import LabeledInput from './components/LabeledInput';
 import LabeledDateInput from './components/LabeledDateInput';
 import CheckRow from './components/CheckRow';
@@ -141,77 +141,36 @@ function TabButton({ active, children, onClick }) {
   return (
     <div className="p-4 space-y-4">
       
-          <div role="tablist">
+      <div role="tablist">
+
         {/* Top Tabs */}
-        <div className="flex space-x-2">
-          {topTabs.map((tab) => {
-            const isActive = topTab === tab && section === 'primary';
-
-            return (
-              <button
-                key={tab}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => {
-                  setSection('primary');
-                  setTopTab(tab);
-                }}
-                className="
-                  px-4 py-2 text-sm font-normal transition
-                  border border-transparent
-                  text-neutral-950
-                  bg-transparent
-                  hover:bg-neutral-200
-                  focus:outline-none
-                  aria-selected:bg-neutral-100
-                  aria-selected:shadow-md
-                  aria-selected:text-neutral-950
-                  aria-selected:font-bold
-                  focus:bg-neutral-200
-                "
-              >
-                {tab}
-              </button>
-            );
-          })}
+        <div className="pm-tab-row">
+          {topTabs.map((tab) => (
+            <ModalTabButton
+              key={tab}
+              active={topTab === tab && section === 'primary'}
+              onClick={() => { setSection('primary'); setTopTab(tab); }}
+            >
+              {tab}
+            </ModalTabButton>
+          ))}
         </div>
 
-
-                
         {/* Bottom Tabs */}
-        <div className="flex space-x-2 pt-2">
-          {bottomTabs.map((tab) => {
-            const isActive = bottomTab === tab && section === 'module';
-
-            return (
-              <button
-                key={tab}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => {
-                  setSection('module');
-                  setBottomTab(tab);
-                }}
-                className="
-                  px-4 py-2 text-sm font-normal transition
-                  border border-transparent
-                  text-neutral-950
-                  bg-transparent
-                  hover:bg-neutral-200
-                  focus:outline-none
-                  aria-selected:bg-neutral-200
-                  aria-selected:shadow-md
-                  aria-selected:text-neutral-950
-                  aria-selected:font-bold
-                  focus:bg-neutral-300
-                  
-                  "
-              >{tab}
-              </button>
-            );
-          })}
+        <div className="pm-tab-row pt-1">
+          {bottomTabs.map((tab) => (
+            <ModalTabButton
+              key={tab}
+              active={bottomTab === tab && section === 'module'}
+              onClick={() => { setSection('module'); setBottomTab(tab); }}
+            >
+              {tab}
+            </ModalTabButton>
+          ))}
         </div>
-</div>         
+
+      </div>
+      
       {/* 🔸 Single Content Area (switches by section) */}
       <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
         {section === 'primary' ? (

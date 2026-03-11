@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, ReactNode} from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
@@ -74,10 +74,25 @@ const COMPONENT_COLUMNS = [
 
 const TABLE_STORAGE_KEY = 'product-component-search';
 
-/**
- * @param {{ onOpenProduct?: (row: any) => void }} props
- */
-export default function ProductComponentSearch({ onOpenProduct }) {
+interface Props {
+  onOpenProduct?: (row: any) => void;
+  onSelectProduct?: (row: any) => void;
+  inlineDetailPanel?: ReactNode;
+  onNew?: () => void;
+  onClone?: () => void;
+  newLabel?: string;
+  cloneLabel?: string;
+}
+
+export default function ProductComponentSearch({
+  onOpenProduct,
+  onSelectProduct,
+  inlineDetailPanel,
+  onNew,
+  onClone,
+  newLabel,
+  cloneLabel,
+}: Props) {
   const [filters, setFilters] = useState({ pc: '', description: '' });
   const [tree, setTree] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
@@ -402,8 +417,14 @@ export default function ProductComponentSearch({ onOpenProduct }) {
           storageKey={TABLE_STORAGE_KEY}
           loading={loading}
           selectedRowKey={selectedCompCode}
-          onRowClick={(row) => setSelectedCompCode(String(row.code ?? ''))}
-          onRowDoubleClick={(row) => onOpenProduct?.(row)}
+          onRowClick={(row: any) => {
+            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            onSelectProduct?.(row);
+          }}
+          onRowDoubleClick={(row: any) => {
+            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            onOpenProduct?.(row);
+          }}
           emptyMessage={
             !isResultsMode && !selectedCatObj
               ? '← Select a category to view components.'

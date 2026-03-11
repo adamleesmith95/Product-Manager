@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
@@ -11,19 +11,37 @@ import TextInput from './TextInput';
 import { resetTableColumns } from '../utils/tableStorage';
 
 const DISPLAY_CATEGORY_COLUMNS = [
-  { key: 'code', label: 'Code', sortable: true, sortType: 'string' },
-  { key: 'label', label: 'Description', sortable: true, sortType: 'string' },
-  { key: 'displayGroupCode', label: 'Display Group Code', sortable: true, sortType: 'string' },
-  { key: 'displayGroup', label: 'Display Group', sortable: true, sortType: 'string' },
-  { key: 'active', label: 'Active', sortable: true, sortType: 'string' },
-  { key: 'order', label: 'Display Order', sortable: true, sortType: 'number' },
-  { key: 'operatorId', label: 'Operator ID', sortable: true, sortType: 'string' },
-  { key: 'updated', label: 'Updated', sortable: true, sortType: 'string' },
+  { key: 'code', label: 'Code', sortable: true, sortType: 'string' as const },
+  { key: 'label', label: 'Description', sortable: true, sortType: 'string' as const },
+  { key: 'displayGroupCode', label: 'Display Group Code', sortable: true, sortType: 'string' as const },
+  { key: 'displayGroup', label: 'Display Group', sortable: true, sortType: 'string' as const },
+  { key: 'active', label: 'Active', sortable: true, sortType: 'string' as const },
+  { key: 'order', label: 'Display Order', sortable: true, sortType: 'number' as const },
+  { key: 'operatorId', label: 'Operator ID', sortable: true, sortType: 'string' as const },
+  { key: 'updated', label: 'Updated', sortable: true, sortType: 'string' as const },
 ];
 
 const TABLE_STORAGE_KEY = 'display-category-search';
 
-export default function DisplayCategorySearch() {
+interface Props {
+  onOpenCategory?: (row: any) => void;
+  onSelectCategory?: (row: any) => void;
+  onNew?: () => void;
+  onClone?: () => void;
+  newLabel?: string;
+  cloneLabel?: string;
+  inlineDetailPanel?: ReactNode;
+}
+
+export default function DisplayCategorySearch({
+  onOpenCategory,
+  onSelectCategory,
+  onNew,
+  onClone,
+  newLabel,
+  cloneLabel,
+  inlineDetailPanel,
+}: Props) {
   const { cache, setCache } = useDataCache();
 
   const [filters, setFilters] = useState({ code: '', description: '' });

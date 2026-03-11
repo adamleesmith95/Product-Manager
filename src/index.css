@@ -548,3 +548,12 @@
     height: 88vh;
   }
 }
+
+/* Shared modal tab row */
+.pm-tab-row {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}

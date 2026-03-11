@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, ReactNode } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useBrowserData } from '../hooks/useBrowserData';
@@ -10,15 +10,33 @@ import { resetTableColumns } from '../utils/tableStorage';
 const TABLE_STORAGE_KEY = 'display-group-search';
 
 const COLUMNS = [
-  { key: 'code', label: 'Code', width: 72, maxWidth: 90 },
-  { key: 'description', label: 'Description', maxWidth: 100 },
-  { key: 'active', label: 'Active', width: 64, maxWidth: 76 },
-  { key: 'displayOrder', label: 'Display Order', maxWidth: 100 },
-  { key: 'operatorId', label: 'Operator ID',  maxWidth: 100 },
-  { key: 'updated', label: 'Updated', width: 120, maxWidth: 240 },
+  { key: 'code', label: 'Code', width: 72, maxWidth: 90, sortType: 'string' as const },
+  { key: 'description', label: 'Description', maxWidth: 100, sortType: 'string' as const },
+  { key: 'active', label: 'Active', width: 64, maxWidth: 76, sortType: 'string' as const },
+  { key: 'displayOrder', label: 'Display Order', maxWidth: 100, sortType: 'number' as const },
+  { key: 'operatorId', label: 'Operator ID', maxWidth: 100, sortType: 'string' as const },
+  { key: 'updated', label: 'Updated', width: 120, maxWidth: 240, sortType: 'string' as const },
 ];
 
-export default function DisplayGroupSearch() {
+interface Props {
+  onOpenGroup?: (row: any) => void;
+  onSelectGroup?: (row: any) => void;
+  onNew?: () => void;
+  onClone?: () => void;
+  newLabel?: string;
+  cloneLabel?: string;
+  inlineDetailPanel?: ReactNode;
+}
+
+export default function DisplayGroupSearch({
+  onOpenGroup,
+  onSelectGroup,
+  onNew,
+  onClone,
+  newLabel,
+  cloneLabel,
+  inlineDetailPanel,
+}: Props) {
   const [filters, setFilters] = useState({ code: '', description: '' });
   const [appliedFilters, setAppliedFilters] = useState({ code: '', description: '' });
 
@@ -122,7 +140,7 @@ export default function DisplayGroupSearch() {
           />
         </div>
       }
-      paneFooter={<PaneActions onNew={() => {}} onClone={() => {}} />}
+      paneFooter={<PaneActions onNew={onNew} onClone={onClone} />}
     />
   );
 }
