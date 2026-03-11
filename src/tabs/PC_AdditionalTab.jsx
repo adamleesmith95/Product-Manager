@@ -1,21 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
 
 const EMPTY = {
-  crmCustomerType: '',
-  crmProductCategory: '',
-  crmProduct: '',
-  inventoryPool: '',
-  revenueStatistic: '',
-  roster: '',
-  salesStatistic: '',
-  deferralCalendar: '',
-  customerPropertySet: '',
-  crmEvent: '',
-  onlineHotlist: '',
-  reportRevenue: '',
-  printAcademyLabels: '',
-  offlineFreeSell: '',
-  revenueLocationOverrideCategory: '',
+  crmCustomerType: '', crmProductCategory: '', crmProduct: '',
+  inventoryPool: '', revenueStatistic: '', roster: '',
+  salesStatistic: '', deferralCalendar: '', customerPropertySet: '',
+  crmEvent: '', onlineHotlist: '', reportRevenue: '',
+  printAcademyLabels: '', offlineFreeSell: '', revenueLocationOverrideCategory: '',
 };
 
 function ReadonlyField({ label, value }) {
@@ -28,38 +19,18 @@ function ReadonlyField({ label, value }) {
 }
 
 export default function PC_AdditionalTab({ productCode, isActive }) {
-  const [row, setRow] = useState(EMPTY);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const loadedFor = useRef(null);
+  const { data, loading, error } = useModalCachedFetch(
+    `pc-additional-${productCode}`,
+    async () => {
+      const res = await fetch(`/api/product-components/${productCode}/additional`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return { ...EMPTY, ...(json?.row ?? {}) };
+    },
+    !!productCode && isActive
+  );
 
-  useEffect(() => {
-    if (!isActive || !productCode) return;
-    if (loadedFor.current === productCode) return;
-
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await fetch(`/api/product-components/${productCode}/additional`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const data = json?.row ?? EMPTY;
-        setRow({ ...EMPTY, ...data });
-        loadedFor.current = productCode;
-      } catch (e) {
-        if (e.name !== 'AbortError') setError('Failed to load Additional tab.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [isActive, productCode]);
+  const row = data ?? EMPTY;
 
   if (!productCode) return <div className="p-3 text-sm text-gray-500">No product selected.</div>;
   if (loading) return <div className="p-3 text-sm">Loading Additional…</div>;

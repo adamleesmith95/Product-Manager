@@ -20,37 +20,110 @@ const bottomTabs = ['Sale Locations', 'Product Components', 'Accounting', 'Produ
 
 // ADD
 function initFormFromProduct(product) {
+  const S = (v) => v ?? '';
+  const N = (v) => v ?? '';
+  const Y = (v) => v === 'Y';
+
   return {
-    code: product?.code ?? '',
-    description: product?.description ?? '',
-    displayOrder: product?.displayOrder ?? '',
-    active: product?.active ?? '',
-    display: product?.display ?? '',
-    displayCategory: product?.displayCategory ?? '',
-    displayCategoryCode: product?.displayCategoryCode ?? '',
-    operatorId: product?.operatorId ?? '',
-    updateDate: product?.updateDate ?? '',
-    // ...keep/extend with any existing fields your tabs use...
+    // General
+    code:                   S(product?.code),
+    description:            S(product?.description),
+    displayOrder:           N(product?.displayOrder),
+    maxQuantity:            N(product?.maxQuantity),
+    receiptLabel:           S(product?.receiptLabel),
+    operatorId:             S(product?.operatorId),
+    updateDate:             S(product?.updateDate),
+    priceChangeLevel:       S(product?.priceChangeLevel),
+    securityLevel:          S(product?.securityLevel),
+    validateCustomerSp:     S(product?.validateCustomerSp),
+    customerAgeMin:         N(product?.customerAgeMin),
+    customerAgeMax:         N(product?.customerAgeMax),
+    displayLevel:           S(product?.displayLevel),
+
+    displayCategory:        S(product?.displayCategory),
+    displayCategoryCode:    S(product?.displayCategoryCode),
+    primaryLob:             S(product?.primaryLob),
+    primaryLobCode:         S(product?.primaryLobCode),
+    auditCategory:          S(product?.auditCategory),
+    auditCategoryCode:      S(product?.auditCategoryCode),
+    salesReportGroup:       S(product?.salesReportGroup),
+    salesReportGroupCode:   S(product?.salesReportGroupCode),
+    salesReportCategory:    S(product?.salesReportCategory),
+    salesReportCategoryCode:S(product?.salesReportCategoryCode),
+
+    generalFlags: {
+      active:                 Y(product?.active),
+      display:                Y(product?.display),
+      commission:             Y(product?.commission),
+      identifyCustomer:       Y(product?.identifyCustomer),
+      hideReceiptPrice:       Y(product?.hideReceiptPrice),
+      priceByLocation:        Y(product?.priceByLocation),
+      priceBySeason:          Y(product?.priceBySeason),
+      priceByPricingRule:     Y(product?.priceByPricingRule),
+      priceBySalesChannel:    Y(product?.priceBySalesChannel),
+      paymentProfileRequired: Y(product?.paymentProfileRequired),
+      eligibleForAutoRenew:   Y(product?.autoRenew),
+    },
+
+    // PropertiesTab — Mt Money
+    passComp:           product?.passComp    ?? false,
+    ticketComp:         product?.ticketComp  ?? false,
+    productComp:        product?.productComp ?? false,
+    passTrade:          product?.passTrade   ?? false,
+    ticketTrade:        product?.ticketTrade ?? false,
+    productTrade:       product?.productTrade ?? false,
+    coupon:             product?.coupon      ?? false,
+
+    // PropertiesTab — Order
+    depositRequired:    product?.depositRequired ?? false,
+    allowDelivery:      product?.allowDelivery   ?? false,
+    pickupLocationType: S(product?.pickupLocationType),
+
+    // PropertiesTab — Internet
+    shippingCategory:     S(product?.shippingCategory),
+    moreInfoUrl:          S(product?.moreInfoUrl),
+    imageURL:             S(product?.imageURL),
+    imageHeight:          N(product?.imageHeight),
+    imageWidth:           N(product?.imageWidth),
+    advanceDays:          N(product?.advanceDays),
+    units:                N(product?.units),
+    productUnitUOM:       S(product?.productUnitUOM),
+    featured:             product?.featured ?? false,
+    internetAuthorization:S(product?.internetAuthorization),
+    specialStartDate:     S(product?.specialStartDate),
+    specialEndDate:       S(product?.specialEndDate),
+    specialText:          S(product?.specialText),
+    advanceDayRangeMin:   N(product?.advanceDayRangeMin),
+    advanceDayRangeMax:   N(product?.advanceDayRangeMax),
   };
 }
 
 export default function ManageProductsForSale({ product, onClose }) {
-  // FIX: include tabForms + setTabForm
   const { tabForms, setTabForm, getDataCache, setDataCache } = useModalSession();
 
-  const [form, setForm] = useState(() => tabForms['general'] ?? initFormFromProduct(product));
-  const [topTab, setTopTab] = useState(() => tabForms['topTab'] ?? 'General');
+  // Use product code as cache key so switching products always resets
+  const productKey = product?.code ?? product?.phcCode ?? '__new__';
+
+  const [form, setForm] = useState(() => {
+    // Only restore cached form if it belongs to THIS product
+    const cached = tabForms['general'];
+    return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
+  });
+
+  const [topTab, setTopTab]     = useState(() => tabForms['topTab']    ?? 'General');
   const [bottomTab, setBottomTab] = useState(() => tabForms['bottomTab'] ?? 'Sale Locations');
-  const [section, setSection] = useState(() => tabForms['section'] ?? 'primary');
+  const [section, setSection]   = useState(() => tabForms['section']   ?? 'primary');
 
-  // keep form in sync when opening a different product
+  // Reset form when product changes
   useEffect(() => {
-    if (!tabForms['general']) {
-      setForm(initFormFromProduct(product));
+    const cached = tabForms['general'];
+    const fresh = initFormFromProduct(product);
+    if (!cached || cached.code !== productKey) {
+      setForm(fresh);
+      setTabForm('general', fresh);
     }
-  }, [product]);
+  }, [productKey]);
 
-  // keep ONLY ONE update function
   const update = (key, value) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
@@ -59,14 +132,17 @@ export default function ManageProductsForSale({ product, onClose }) {
     });
   };
 
-  // persist active tabs too
-  useEffect(() => setTabForm('topTab', topTab), [topTab]);
-  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
+  // hydrateForm — fixes missing setTabForm call
+  function hydrateForm(row) {
+    const fresh = initFormFromProduct(row);
+    setForm(fresh);
+    setTabForm('general', fresh);
+  }
 
-  // persist section
-  useEffect(() => {
-    setTabForm('section', section);
-  }, [section]); // remove setTabForm from deps
+  // persist active tabs
+  useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
+  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
+  useEffect(() => setTabForm('section',   section),   [section]);
 
   // Resolve the PHC once and pass it to tabs that need it
   const phc =
@@ -94,55 +170,9 @@ export default function ManageProductsForSale({ product, onClose }) {
   }, [product?.code, product?.phcCode, getDataCache, setDataCache]);
 
   function hydrateForm(row) {
-    const S = (v) => v ?? '';
-    const N = (v) => v ?? '';
-    const Y = (v) => v === 'Y';
-
-    setForm({
-      ...row,
-      productForSale: S(row.code),
-      description: S(row.description),
-      displayOrder: N(row.displayOrder),
-
-      displayCategory: row.displayCategory ?? '',
-      displayCategoryCode: row.displayCategoryCode ?? '',
-
-      maxQuantity: N(row.maxQuantity),
-
-      primaryLob: row.primaryLob ?? '',
-      primaryLobCode: row.primaryLobCode ?? '',
-
-      auditCategory: row.auditCategory ?? '',
-      auditCategoryCode: row.auditCategoryCode ?? '',
-      salesReportGroup: row.salesReportGroup ?? '',
-      salesReportGroupCode: row.salesReportGroupCode ?? '',
-      salesReportCategory: row.salesReportCategory ?? '',
-      salesReportCategoryCode: row.salesReportCategoryCode ?? '',
-
-      receiptLabel: S(row.receiptLabel),
-      operatorId: S(row.operatorId),
-      updateDate: S(row.updateDate),
-      priceChangeLevel: S(row.priceChangeLevel),
-      securityLevel: S(row.securityLevel),
-      validateCustomerSp: S(row.validateCustomerSp),
-      customerAgeMin: N(row.customerAgeMin),
-      customerAgeMax: N(row.customerAgeMax),
-
-      // flags
-      generalFlags: {
-        active: Y(row.active),
-        display: Y(row.display),
-        commission: Y(row.commission),
-        identifyCustomer: Y(row.identifyCustomer),
-        hideReceiptPrice: Y(row.hideReceiptPrice),
-        priceByLocation: Y(row.priceByLocation),
-        priceBySeason: Y(row.priceBySeason),
-        priceByPricingRule: Y(row.priceByPricingRule),
-        priceBySalesChannel: Y(row.priceBySalesChannel),
-        paymentProfileRequired: Y(row.paymentProfileRequired),
-        eligibleForAutoRenew: Y(row.autoRenew),
-      },
-    });
+    const fresh = initFormFromProduct(row);
+    setForm(fresh);
+    setTabForm('general', fresh);
   }
 
   if (!product) {

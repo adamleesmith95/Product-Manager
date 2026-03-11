@@ -1,56 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
 
 const EMPTY = {
-  productCode: null,
-  description: '',
-  productCategory: '',
-  displayOrder: null,
-  productProfileType: '',
-  units: '',
-  salesUnits: '',
-  active: '',
-  display: '',
-  changeRevenueLocation: '',
-  paymentDate: '',
-  reference: '',
-  deferralPattern: '',
-  operatorId: '',
-  updateDate: '',
+  productCode: null, description: '', productCategory: '',
+  displayOrder: null, productProfileType: '', units: '',
+  salesUnits: '', active: '', display: '', changeRevenueLocation: '',
+  paymentDate: '', reference: '', deferralPattern: '', operatorId: '', updateDate: '',
 };
 
 export default function PC_GeneralTab({ productCode, isActive }) {
-  const [row, setRow] = useState(EMPTY);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const loadedFor = useRef(null);
+  const { data, loading, error } = useModalCachedFetch(
+    `pc-general-${productCode}`,
+    async () => {
+      const res = await fetch(`/api/product-components/${productCode}/general`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return { ...EMPTY, ...(json?.row ?? {}) };
+    },
+    !!productCode && isActive
+  );
 
-  useEffect(() => {
-    if (!isActive || !productCode) return;
-    if (loadedFor.current === productCode) return;
-
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await fetch(`/api/product-components/${productCode}/general`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const data = json?.row ?? EMPTY;
-        setRow({ ...EMPTY, ...data });
-        loadedFor.current = productCode;
-      } catch (e) {
-        if (e.name !== 'AbortError') setError('Failed to load General tab.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [isActive, productCode]);
+  const row = data ?? EMPTY;
 
   if (!productCode) return <div className="p-3 text-sm text-gray-500">No product selected.</div>;
   if (loading) return <div className="p-3 text-sm">Loading General…</div>;

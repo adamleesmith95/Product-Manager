@@ -47,8 +47,14 @@ export function ModalSessionProvider({ children }: { children: ReactNode }) {
   return <ModalSessionContext.Provider value={value}>{children}</ModalSessionContext.Provider>;
 }
 
+// existing hook (throws if no provider)
 export function useModalSession() {
   const ctx = useContext(ModalSessionContext);
-  if (!ctx) throw new Error('useModalSession must be used inside ModalSessionProvider');
+  if (!ctx) throw new Error('useModalSession must be used within ModalSessionProvider');
   return ctx;
+}
+
+// ADD: safe version — returns null if no provider (for components used outside modal too)
+export function useModalSessionSafe() {
+  return useContext(ModalSessionContext);
 }
