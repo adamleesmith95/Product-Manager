@@ -1,6 +1,7 @@
-
-import React, { useEffect, useMemo, useState } from 'react';
-import Button from '../components/Button'; // If you prefer, replace with plain <button> (see inline notes)
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import DualPane from '../components/shared/DualPane';
+import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+import { useModalSession } from '../context/ModalSessionContext';
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -11,9 +12,113 @@ import Button from '../components/Button'; // If you prefer, replace with plain 
 // - Right-click on Assigned: "Modify..." context menu (stubbed)
 // -------------------------------------------------------------
 
+function normalizeAssigned(payload) {
+  if (!payload) return [];
+  const arr = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload.rows)
+    ? payload.rows
+    : Array.isArray(payload.assigned)
+    ? payload.assigned
+    : Array.isArray(payload.data)
+    ? payload.data
+    : [];
+
+  return arr.map((x) => ({
+    component_code: x.component_code ?? x.componentCode ?? x.code,
+    component_desc: x.component_desc ?? x.componentDesc ?? x.description ?? x.code,
+    ...x,
+  }));
+}
+
 export default function ProductComponentsTab({ productPhc, onComponentsChanged }) {
-  const [tree, setTree] = useState([]);
+  const { tabForms, setTabForm } = useModalSession();
+
+  // ADD THIS
+  const sessionKey = `productComponents:${productPhc ?? ''}`;
+
+  // fetch once per modal session — won't re-fetch on tab switch
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+  const DEBUG_PC = true;
+  const log = (...args) => {
+    if (!DEBUG_PC) return;
+    console.log('[PC TAB]', ...args);
+  };
+
+  const { data: componentData, loading } = useModalCachedFetch(
+    `product-components-${productPhc}`,
+    async () => {
+      const res = await fetch(`${API_BASE}/api/products/${productPhc}/components`);
+      if (!res.ok) throw new Error(`Failed to load components (${res.status})`);
+      return res.json();
+    },
+    !!productPhc
+  );
+
+  const { data: treeData } = useModalCachedFetch(
+    'components-tree',
+    async () => {
+      const res = await fetch(`${API_BASE}/api/components/tree`);
+      if (!res.ok) throw new Error(`Failed to load tree (${res.status})`);
+      return res.json();
+    },
+    true
+  );
+
+  const tree = Array.isArray(treeData) ? treeData : (treeData?.tree ?? []);
+
   const [assigned, setAssigned] = useState([]);
+  const didInitRef = useRef(false);
+
+  // reset only when product changes
+  useEffect(() => {
+    didInitRef.current = false;
+    setAssigned(tabForms[sessionKey]?.assigned ?? []);
+  }, [sessionKey]);
+
+  // initialize once when data is ready (BEFORE paint)
+  useLayoutEffect(() => {
+    if (didInitRef.current) return;
+    if (loading) return;
+
+    const cached = tabForms[sessionKey]?.assigned ?? [];
+    const fromApi = normalizeAssigned(componentData);
+    const seed = cached.length ? cached : fromApi;
+
+    setAssigned(seed);
+    didInitRef.current = true;
+  }, [loading, componentData, sessionKey, tabForms]);
+
+  // persist only after initialization
+  useEffect(() => {
+    if (!didInitRef.current) return;
+    setTabForm(sessionKey, { assigned });
+  }, [assigned, sessionKey, setTabForm]);
+
+  const hydratedRef = useRef(false);
+
+  // Reset hydration when opening a different product
+  useEffect(() => {
+    hydratedRef.current = false;
+    setAssigned(tabForms[sessionKey]?.assigned ?? []);
+  }, [sessionKey]);
+
+  const updateAssigned = (nextOrUpdater) => {
+    setAssigned((prev) =>
+      typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater
+    );
+  };
+
+  // hydrate once from API (do not overwrite user edits on later renders)
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    const fromApi = normalizeAssigned(componentData);
+    if (fromApi.length > 0) {
+      updateAssigned(fromApi);
+    }
+    hydratedRef.current = true;
+  }, [componentData]);
 
   // expand/collapse state for groups/categories
   const [expanded, setExpanded] = useState(new Set());
@@ -31,26 +136,18 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
   // -------------------- Data loading --------------------
 
-  // Available components (hierarchical)
-  useEffect(() => {
-    fetch('/api/components/tree')
-      .then(r => r.json())
-      .then(setTree)
-      .catch(err => console.error('[PC Tab] tree load failed', err));
-  }, []);
-
   // Assigned components (for this PHC)
-  useEffect(() => {
-    if (!productPhc) {
-      console.warn('[PC Tab] no productPhc; skipping assigned fetch');
-      return;
-    }
-    const url = `/api/products/${encodeURIComponent(productPhc)}/components`;
-    fetch(url)
-      .then(r => r.json())
-      .then(data => setAssigned(Array.isArray(data) ? data : (data?.rows ?? [])))
-      .catch(err => console.error('[PC Tab] assigned load failed', err));
-  }, [productPhc]);
+  // useEffect(() => {
+  //   if (!productPhc) {
+  //     console.warn('[PC Tab] no productPhc; skipping assigned fetch');
+  //     return;
+  //   }
+  //   const url = `/api/products/${encodeURIComponent(productPhc)}/components`;
+  //   fetch(url)
+  //     .then(r => r.json())
+  //     .then(data => setAssigned(Array.isArray(data) ? data : (data?.rows ?? [])))
+  //     .catch(err => console.error('[PC Tab] assigned load failed', err));
+  // }, [productPhc]);
 
   // Lookup of already-assigned component codes
   const assignedLookup = useMemo(
@@ -146,7 +243,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
     if (!selectedCodes.length) return;
 
-    setAssigned(prev => [
+    updateAssigned(prev => [
       ...prev,
       ...selectedCodes.map(code => ({
         component_code: code,
@@ -165,7 +262,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     if (assignSelection.length === 0) return;
 
     const toRemove = new Set(assignSelection);
-    setAssigned(prev => prev.filter((_, idx) => !toRemove.has(idx)));
+    updateAssigned(prev => prev.filter((_, idx) => !toRemove.has(idx)));
 
     // clear selection
     setAssignSelection([]);
@@ -203,21 +300,23 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   }
 
   function openModifyForAssignedSelection() {
-    setMenu(m => ({ ...m, open: false }));
-    if (assignSelection.length === 0) return;
+    const targets = assignSelection.length
+      ? assignSelection.map((i) => assigned[i]).filter(Boolean)
+      : [];
 
-    const targets = assignSelection.map(i => assigned[i]);
-    // TODO: Replace with your real Product Component Management modal
-    // Hook into your Modal context here if desired.
-    alert(`Modify… for ${targets.length} component(s).\n\n${targets
-      .map(t => `${t.component_desc} (${t.component_code})`)
-      .join('\n')}`);
+    if (!targets.length) return;
+
+    alert(
+      `Modify… for ${targets.length} component(s).\n\n${targets
+        .map((t) => `${t.component_desc} (${t.component_code})`)
+        .join('\n')}`
+    );
   }
 
   // -------------------- Render --------------------
 
   return (
-    <div className="relative">
+    <div className="flex flex-col h-full min-h-0">
       {/* Context menu */}
       {menu.open && (
         <div
@@ -233,90 +332,97 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
         </div>
       )}
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-6 h-560px">
-        {/* LEFT: AVAILABLE */}
-        <div className="border rounded p-3 overflow-auto">
-          <h3 className="font-semibold mb-2">Product Groups</h3>
-
-          {tree.map(group => (
-            <div key={group.groupCode}>
-              <TreeHeader
-                label={group.label}
-                expanded={expanded.has(group.groupCode)}
-                onClick={() => toggleExpand(group.groupCode)}
-              />
-
-              {expanded.has(group.groupCode) && group.categories.map(cat => (
-                <div key={cat.categoryCode} className="ml-4">
+      <DualPane
+        leftTitle="Product Groups"
+        rightTitle="Assigned Products"
+        onAdd={addSelected}
+        onRemove={removeSelected}
+        addDisabled={availSelection.length === 0}
+        removeDisabled={assignSelection.length === 0}
+        leftContent={
+          <>
+            {tree.length === 0 ? (
+              <div className="text-xs text-neutral-500">No product groups.</div>
+            ) : (
+              tree.map((group) => (
+                <div key={group.groupCode}>
                   <TreeHeader
-                    label={cat.label}
-                    expanded={expanded.has(cat.categoryCode)}
-                    onClick={() => toggleExpand(cat.categoryCode)}
+                    label={group.label}
+                    expanded={expanded.has(group.groupCode)}
+                    onClick={() => toggleExpand(group.groupCode)}
                   />
 
-                  {expanded.has(cat.categoryCode) && cat.components.map(comp => {
-                    const visIndex = indexByCode.get(comp.code);
-                    const selected = visIndex != null && availSelection.includes(visIndex);
-                    const disabled = assignedLookup.has(comp.code);
-                    return (
-                      <div
-                        key={comp.code}
-                        className={
-                          'ml-4 cursor-pointer px-2 py-1 rounded ' +
-                          (selected ? 'bg-blue-100 ' : '') +
-                          (disabled ? 'opacity-40 ' : '')
-                        }
-                        title={disabled
-                          ? 'Already assigned'
-                          : 'Click to select. Use CTRL/CMD for multi-select toggle or SHIFT for ranges.'}
-                        onClick={e => !disabled && handleAvailableClick(visIndex, e)}
-                      >
-                        {comp.label}{' '}
-                        <span className="text-xs text-neutral-500">({comp.code})</span>
+                  {expanded.has(group.groupCode) &&
+                    group.categories.map((cat) => (
+                      <div key={cat.categoryCode} className="ml-4">
+                        <TreeHeader
+                          label={cat.label}
+                          expanded={expanded.has(cat.categoryCode)}
+                          onClick={() => toggleExpand(cat.categoryCode)}
+                        />
+
+                        {expanded.has(cat.categoryCode) &&
+                          cat.components.map((comp) => {
+                            const visIndex = indexByCode.get(comp.code);
+                            const selected =
+                              visIndex != null && availSelection.includes(visIndex);
+                            const disabled = assignedLookup.has(comp.code);
+
+                            return (
+                              <div
+                                key={comp.code}
+                                className={
+                                  'ml-4 cursor-pointer px-2 py-1 rounded ' +
+                                  (selected ? 'bg-blue-100 ' : '') +
+                                  (disabled ? 'opacity-40 ' : '')
+                                }
+                                title={
+                                  disabled
+                                    ? 'Already assigned'
+                                    : 'Click to select. CTRL/CMD multi-select, SHIFT for ranges.'
+                                }
+                                onClick={(e) => !disabled && handleAvailableClick(visIndex, e)}
+                              >
+                                {comp.label}{' '}
+                                <span className="text-xs text-neutral-500">({comp.code})</span>
+                              </div>
+                            );
+                          })}
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* MIDDLE BUTTONS */}
-        <div className="flex flex-col justify-center gap-4">
-          {/* If you prefer plain buttons, replace with:
-              <button className="px-3 py-1.5 rounded border bg-blue-600 text-white hover:bg-blue-700" onClick={addSelected}>&gt;</button>
-              <button className="px-3 py-1.5 rounded border bg-white text-blue-700 hover:bg-blue-50" onClick={removeSelected}>&lt;</button>
-           */}
-          <button className="px-3 py-1.5 rounded border bg-gray-50 text-gray-700 hover:bg-neutral-200" onClick={addSelected}>&gt;</button>
-          <button className="px-3 py-1.5 rounded border bg-gray-50 text-gray-700 hover:bg-neutral-200" onClick={removeSelected}>&lt;</button>
-        </div>
-
-        {/* RIGHT: ASSIGNED */}
-        <div className="border rounded p-3 overflow-auto">
-          <h3 className="font-semibold mb-2">Assigned Products</h3>
-
-          {assigned.length === 0 ? (
-            <div className="text-xs text-neutral-500">No assigned products.</div>
-          ) : (
-            assigned.map((a, i) => {
-              const selected = assignSelection.includes(i);
-              return (
-                <div
-                  key={a.component_code}
-                  className={`cursor-pointer px-2 py-1 rounded ${selected ? 'bg-blue-100' : ''}`}
-                  title="Click to select. Use CTRL/CMD for multi-select toggle or SHIFT for ranges. Right‑click for actions."
-                  onClick={e => handleAssignedClick(i, e)}
-                  onContextMenu={e => openContextMenuForAssigned(e, i)}
-                >
-                  {a.component_desc}
-                  <span className="ml-2 text-xs text-neutral-500">({a.component_code})</span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+              ))
+            )}
+          </>
+        }
+        rightContent={
+          <>
+            {assigned.length === 0 ? (
+              <div className="text-xs text-neutral-500">No assigned products.</div>
+            ) : (
+              assigned.map((a, i) => {
+                const selected = assignSelection.includes(i);
+                return (
+                  <div
+                    key={a.component_code}
+                    className={`cursor-pointer px-2 py-1 rounded ${
+                      selected ? 'bg-blue-100' : ''
+                    }`}
+                    title="Click to select. CTRL/CMD multi-select, SHIFT for ranges. Right-click for actions."
+                    onClick={(e) => handleAssignedClick(i, e)}
+                    onContextMenu={(e) => openContextMenuForAssigned(e, i)}
+                  >
+                    {a.component_desc}
+                    <span className="ml-2 text-xs text-neutral-500">
+                      ({a.component_code})
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </>
+        }
+      />
     </div>
   );
 }

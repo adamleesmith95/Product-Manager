@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import DisplayCategoryBrowser from '../components/DisplayCategoryBrowser';
 import ManageProductsForSaleLegacy from '../ManageProductsForSale.jsx';
 import Modal from '../components/Modal';
+import { ModalSessionProvider } from '../context/ModalSessionContext';
 
 type ProductRow = {
   code: string;
@@ -18,7 +19,7 @@ type ProductRow = {
 type DetailState = { open: boolean; product?: ProductRow };
 
 
-export default function ManageProductsForSale() {
+export default function ManageProductsForSalePage() {
    const [detail, setDetail] = useState<{ open: boolean; product?: ProductRow }>({ open: false, product: undefined });
 // Keep a stable reference to the product that was opened in the modal
 const lastOpenedPhcRef = useRef<ProductRow | null>(null);
@@ -44,6 +45,11 @@ setDetail({ open: true, product })
    * - 'exit' => keep whatever is currently shown in the right pane (desc results, anchor results, etc.)
    * - 'back' => jump to the opened PHC's Display Category and show that category's PHCs
    */
+ // ADD this — simple close used by modal onClose
+  const handleClose = () => {
+    handleCloseDetail('exit', lastOpenedPhcRef.current ?? detail.product);
+  };
+
 
 const handleCloseDetail = (mode: 'exit' | 'back', product?: ProductRow) => {
   setDetail({ open: false, product: undefined });
@@ -73,29 +79,29 @@ const handleCloseDetail = (mode: 'exit' | 'back', product?: ProductRow) => {
 
 
   return (
-    // Surface the modal should cover, edge-to-edge
-    <div id="phc-surface" className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
-      <DisplayCategoryBrowser onOpenProduct={handleOpenProduct} />
+    <>
+      {/* Surface the modal should cover, edge-to-edge */}
+      <div id="phc-surface" className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
+        <DisplayCategoryBrowser onOpenProduct={handleOpenProduct} />
 
-      {/* Full-bleed modal that covers ONLY the PH header surface */}
-      
+        {/* Full-bleed modal that covers ONLY the PH header surface */}
+      </div>
 
-<Modal
-  open={detail.open && !!detail.product}
-  onClose={() => handleCloseDetail('exit', lastOpenedPhcRef.current ?? detail.product)}
-  title={detail.product ? `Manage Product — ${detail.product.description ?? detail.product.code}` : 'Manage Product'}
-  headerClassName="pcphc-modal-header"
-  titleClassName="pcphc-modal-title"
-  panelClassName="pcphc-modal-panel"
->
-  {detail.product && (
-    <ManageProductsForSaleLegacy
-      product={detail.product}
-      onClose={() => handleCloseDetail('back', detail.product)}
-    />
-  )}
-</Modal>
-
-    </div>
+      <Modal
+        open={detail.open}
+        onClose={handleClose}
+        title={detail.product ? `Manage Product — ${detail.product.description ?? detail.product.code}` : 'Manage Product'}
+        headerClassName="pcphc-modal-header"
+        titleClassName="pcphc-modal-title"
+        panelClassName="pcphc-modal-panel"
+      >
+        <ModalSessionProvider>   {/* NEW — wraps modal content only */}
+          <ManageProductsForSaleLegacy
+            product={detail.product}
+            onClose={handleClose}
+          />
+        </ModalSessionProvider>
+      </Modal>
+    </>
   );
 }
