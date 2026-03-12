@@ -6,9 +6,8 @@ import SearchToolbar from './shared/SearchToolbar';
 import PaneHeader from './shared/PaneHeader';
 import PaneActions from './shared/PaneActions';
 import { useBrowserData } from '../hooks/useBrowserData';
-import Field from './Field';
-import TextInput from './TextInput';
 import { resetTableColumns } from '../utils/tableStorage';
+import RowContextMenu from './shared/RowContextMenu';
 
 const DISPLAY_CATEGORY_COLUMNS = [
   { key: 'code', label: 'Code', sortable: true, sortType: 'string' as const },
@@ -23,31 +22,40 @@ const DISPLAY_CATEGORY_COLUMNS = [
 
 const TABLE_STORAGE_KEY = 'display-category-search';
 
-interface Props {
+type Props = {
   onOpenCategory?: (row: any) => void;
   onSelectCategory?: (row: any) => void;
+  onModifyCategory?: (row: any) => void;
+  onGoToProductsForSale?: (row: any) => void;
   onNew?: () => void;
   onClone?: () => void;
   newLabel?: string;
   cloneLabel?: string;
   inlineDetailPanel?: ReactNode;
-}
+  initialGroupCode?: string;
+  initialCategoryCode?: string;
+};
 
 export default function DisplayCategorySearch({
   onOpenCategory,
   onSelectCategory,
+  onModifyCategory,
+  onGoToProductsForSale,
   onNew,
   onClone,
   newLabel,
   cloneLabel,
   inlineDetailPanel,
+  initialGroupCode = '',
+  initialCategoryCode = '',
 }: Props) {
   const { cache, setCache } = useDataCache();
 
   const [filters, setFilters] = useState({ code: '', description: '' });
   const [tree, setTree] = useState([]);
-  const [selectedGroupCode, setSelectedGroupCode] = useState('');
-  const [selectedCategoryCode, setSelectedCategoryCode] = useState(null);
+  const [selectedGroupCode, setSelectedGroupCode] = useState<string>('');
+  const [selectedCategoryCode, setSelectedCategoryCode] = useState<string>('');
+
   const groupBtnRefs = useRef({});
 
   const [searchTitle, setSearchTitle] = useState('');
@@ -223,102 +231,166 @@ export default function DisplayCategorySearch({
     // handle clone category logic
   };
 
+  // after groups load, preselect group
+  useEffect(() => {
+    if (!initialGroupCode) return;
+    setSelectedGroupCode(initialGroupCode);
+  }, [initialGroupCode]);
+
+  // after category list for selected group loads, preselect category
+  useEffect(() => {
+    if (!initialCategoryCode) return;
+    setSelectedCategoryCode(initialCategoryCode);
+  }, [initialCategoryCode]);
+
+  // NEW: context menu state
+  const [ctx, setCtx] = useState<null | { x: number; y: number; row: any }>(null);
+
+  // NEW: close context menu on outside click / scroll / resize / escape
+  useEffect(() => {
+    const close = () => setCtx(null);
+    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setCtx(null);
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('keydown', onEsc);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onEsc);
+    };
+  }, []);
+
   return (
-    <BrowserLayout
-      sidebar={
-        <>
-          <div className="pm-sidebar-title">Display Groups</div>
-          <div className="pm-sidebar-scroll">
-            {tree.map((group) => {
-              const selected = String(selectedGroupCode) === String(group.groupCode);
-              return (
-                <button
-                  key={group.groupCode}
-                  type="button"
-                  onClick={() => handleSelectGroup(group.groupCode)}
-                  className={`pm-list-item ${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
-                  title={group.label}
-                  ref={(el) => { groupBtnRefs.current[String(group.groupCode)] = el; }}
-                >
-                  <div className="truncate">
-                    {group.label}
-                    <span className="ml-2 text-[11px] text-neutral-500">({group.groupCode})</span>
-                  </div>
-                </button>
-              );
-            })}
+    <>
+      <BrowserLayout
+        sidebar={
+          <>
+            <div className="pm-sidebar-title">Display Groups</div>
+            <div className="pm-sidebar-scroll">
+              {tree.map((group) => {
+                const selected = String(selectedGroupCode) === String(group.groupCode);
+                return (
+                  <button
+                    key={group.groupCode}
+                    type="button"
+                    onClick={() => handleSelectGroup(group.groupCode)}
+                    className={`pm-list-item ${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
+                    title={group.label}
+                    ref={(el) => { groupBtnRefs.current[String(group.groupCode)] = el; }}
+                  >
+                    <div className="truncate">
+                      {group.label}
+                      <span className="ml-2 text-[11px] text-neutral-500">({group.groupCode})</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        }
+        searchPanel={
+          <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+            <input
+              type="text"
+              name="code"
+              placeholder="Display Category Code"
+              value={filters.code}
+              onChange={handleChange}
+              onKeyDown={onKeyDownBasic}
+              className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+            />
+            <input
+              type="text"
+              name="description"
+              placeholder="Description"
+              value={filters.description}
+              onChange={handleChange}
+              onKeyDown={onKeyDownBasic}
+              className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+            />
+          </SearchToolbar>
+        }
+        paneHeader={
+          <PaneHeader
+            title={headerTitle}
+            onResetColumns={handleResetColumns}
+          />
+        }
+        table={
+          <div className="min-w-0 w-full overflow-x-hidden">
+            <DataTable
+              columns={DISPLAY_CATEGORY_COLUMNS}
+              data={tableRows}
+              rowKey="code"
+              storageKey={TABLE_STORAGE_KEY}
+              loading={loading}
+              autoSizeDeps={[tableRows.length]}
+              className="w-full"
+              selectedRowKey={selectedCategoryCode}
+              onRowClick={(row: any) => {
+                const code = String(row?.code ?? '');
+                setSelectedCategoryCode(code);
+                onSelectCategory?.(row);
+              }}
+              onRowDoubleClick={(row: any) => {
+                const code = String(row?.code ?? '');
+                setSelectedCategoryCode(code);
+                onOpenCategory?.(row);
+              }}
+              onRowContextMenu={(row: any, e: React.MouseEvent<HTMLTableRowElement>) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedCategoryCode(String(row?.code ?? ''));
+                setCtx({ x: e.clientX, y: e.clientY, row });
+              }}
+              emptyMessage={
+                !isResultsMode && !selectedGroupObj
+                  ? '← Select a display group to view categories.'
+                  : !isResultsMode && selectedGroupObj && tableRows.length === 0
+                  ? 'No categories found for this group.'
+                  : isResultsMode && tableRows.length === 0
+                  ? searchTitle || 'Results (0)'
+                  : 'No categories found'
+              }
+            />
           </div>
-        </>
-      }
-      searchPanel={
-        <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
-          <input
-            type="text"
-            name="code"
-            placeholder="Display Category Code"
-            value={filters.code}
-            onChange={handleChange}
-            onKeyDown={onKeyDownBasic}
-            className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+        }
+        paneFooter={
+          <PaneActions
+            onNew={handleNew}
+            onClone={handleClone}
+            newLabel="New"
+            cloneLabel="Clone"
           />
-          <input
-            type="text"
-            name="description"
-            placeholder="Description"
-            value={filters.description}
-            onChange={handleChange}
-            onKeyDown={onKeyDownBasic}
-            className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
-          />
-        </SearchToolbar>
-      }
-      paneHeader={
-        <PaneHeader
-          title={headerTitle}
-          onResetColumns={handleResetColumns}
+        }
+      />
+
+      {ctx && (
+        <RowContextMenu
+          x={ctx.x}
+          y={ctx.y}
+          actions={[
+            {
+              key: 'modify',
+              label: 'Modify',
+              onClick: () => {
+                onModifyCategory?.(ctx.row);
+                setCtx(null);
+              },
+            },
+            {
+              key: 'goto-products',
+              label: 'Go to Products for Sale',
+              onClick: () => {
+                onGoToProductsForSale?.(ctx.row);
+                setCtx(null);
+              },
+            },
+          ]}
         />
-      }
-      table={
-        <div className="min-w-0 w-full overflow-x-hidden">
-          <DataTable
-            columns={DISPLAY_CATEGORY_COLUMNS}
-            data={tableRows}
-            rowKey="code"
-            storageKey={TABLE_STORAGE_KEY}
-            loading={loading}
-            autoSizeDeps={[tableRows.length]}
-            className="w-full"
-            selectedRowKey={selectedCategoryCode}
-            onRowClick={(row: any) => {
-              const code = String(row?.code ?? '');
-              setSelectedCategoryCode(code);
-              onSelectCategory?.(row);
-            }}
-            onRowDoubleClick={(row: any) => {
-              const code = String(row?.code ?? '');
-              setSelectedCategoryCode(code);
-              onOpenCategory?.(row);
-            }}
-            emptyMessage={
-              !isResultsMode && !selectedGroupObj
-                ? '← Select a display group to view categories.'
-                : !isResultsMode && selectedGroupObj && tableRows.length === 0
-                ? 'No categories found for this group.'
-                : isResultsMode && tableRows.length === 0
-                ? searchTitle || 'Results (0)'
-                : 'No categories found'
-            }
-          />
-        </div>
-      }
-      paneFooter={
-        <PaneActions
-          onNew={handleNew}
-          onClone={handleClone}
-          newLabel="New"
-          cloneLabel="Clone"
-        />
-      }
-    />
+      )}
+    </>
   );
 }

@@ -82,7 +82,8 @@ interface DisplayCategoryBrowserProps {
   initialCategoryCode?: string;
   onOpenProduct: (product: ProductRow) => void;
   onModifyCategory?: (row: any) => void;
-  onDrillDownCategory?: (row: any) => void;
+  onGoToDisplayCategory?: (row: any) => void;
+  categoryAnchor?: { code: string; ts: number } | null;
 }
 
 const PRODUCT_COLUMNS: ColumnDefinition<ProductRow>[] = [
@@ -144,14 +145,41 @@ const onResetColumns = () => {
 };
 
 export default function DisplayCategoryBrowser({ 
-  initialCategoryCode,
+  initialCategoryCode = '',
   onOpenProduct,
   onModifyCategory,
-  onDrillDownCategory
+  onGoToDisplayCategory,
+  categoryAnchor = null,
 }: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
-  const [catReloadNonce, setCatReloadNonce] = useState(0);
-const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? "");
+  const [lastAppliedAnchorTs, setLastAppliedAnchorTs] = useState<number>(0);
+
+  const [cats, setCats] = useState<Category[]>([]);
+  const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode || '');
+  const [catReloadNonce, setCatReloadNonce] = useState<number>(0);
+
+  const [lastCatCode, setLastCatCode] = useState<string>("");
+  const [lastCatName, setLastCatName] = useState<string>("");
+  const [rows, setRows] = useState<ProductRow[]>([]);
+  const [originalRows, setOriginalRows] = useState<ProductRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const rowsRef = useRef<ProductRow[]>([]);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
+
+  const [searchTitle, setSearchTitle] = useState<string>("");
+  const isResultsMode = !!searchTitle?.trim();
+
+  const [inlineCode, setInlineCode] = useState<string>("");
+  const [inlineDesc, setInlineDesc] = useState<string>("");
+
+  const debouncedInlineCode = useDebouncedValue(inlineCode, 180);
+  const debouncedInlineDesc = useDebouncedValue(inlineDesc, 180);
+
+  const [selectedPhcCode, setSelectedPhcCode] = useState<string | null>(null);
+
   const {
     data: catsData,
     loading: catsLoading,
@@ -172,9 +200,34 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
     }
   );
 
+  const anchorLockRef = useRef(false);
+
+  // Apply anchor ONLY after categories are loaded, and lock against auto-restore override
+  useEffect(() => {
+    if (!categoryAnchor?.code) return;
+    if (!cats.length) return;
+
+    const code = String(categoryAnchor.code);
+    const match = cats.find((c) => String(c.code) === code);
+    if (!match) return;
+
+    anchorLockRef.current = true;
+    handleSelectCategory(code);
+    setTimeout(() => scrollCategoryIntoView(code), 80);
+
+    // keep "last selected" in sync so later restore doesn't snap back
+    setLastCatCode(code);
+    setLastCatName(match.label ?? "");
+    localStorage.setItem("lastCatCode", code);
+    localStorage.setItem("lastCatName", match.label ?? "");
+  }, [categoryAnchor, cats]);
+
   useEffect(() => {
     if (!catsData) return;
     setCats(catsData);
+
+    // IMPORTANT: never auto-select/restore while anchor lock is active
+    if (anchorLockRef.current) return;
 
     if (!initialCategoryCode && catsData.length && !selectedCat) {
       setSelectedCat(catsData[0].code);
@@ -188,25 +241,6 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
   useEffect(() => {
     if (catsError) console.error("Failed to load display categories", catsError);
   }, [catsError]);
-
-  const [cats, setCats] = useState<Category[]>([]);
-  
-  const [lastCatCode, setLastCatCode] = useState<string>("");
-  const [lastCatName, setLastCatName] = useState<string>("");
-  const [rows, setRows] = useState<ProductRow[]>([]);
-  const [originalRows, setOriginalRows] = useState<ProductRow[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [searchTitle, setSearchTitle] = useState<string>("");
-  const isResultsMode = !!searchTitle?.trim();
-
-  const [inlineCode, setInlineCode] = useState<string>("");
-  const [inlineDesc, setInlineDesc] = useState<string>("");
-
-  const debouncedInlineCode = useDebouncedValue(inlineCode, 180);
-  const debouncedInlineDesc = useDebouncedValue(inlineDesc, 180);
-
-  const [selectedPhcCode, setSelectedPhcCode] = useState<string | null>(null);
 
   const scrollRowIntoView = (code: string) => {
     const el = document.getElementById(`phc-row-${code}`);
@@ -524,11 +558,6 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const rowsRef = useRef<ProductRow[]>(rows);
-  useEffect(() => {
-    rowsRef.current = rows;
-  }, [rows]);
-
   useEffect(() => {
     const handler = (e: Event) => {
       const code = String((e as CustomEvent).detail?.code ?? "");
@@ -558,18 +587,16 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
 
   useEffect(() => {
     const close = () => setCatCtx(null);
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCatCtx(null);
-    };
-    window.addEventListener("click", close);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    window.addEventListener("keydown", onEsc);
+    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setCatCtx(null);
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('keydown', onEsc);
     return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-      window.removeEventListener("keydown", onEsc);
+      window.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onEsc);
     };
   }, []);
 
@@ -588,10 +615,10 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleSelectCategory(c.code); // keep selection in sync
+                    handleSelectCategory(c.code);
                     setCatCtx({ x: e.clientX, y: e.clientY, cat: c });
                   }}
-                  className={`pm-list-item ${selectedCat === c.code ? "pm-list-item--active" : ""}`}
+                  className={`pm-list-item ${selectedCat === c.code ? 'pm-list-item--active' : ''}`}
                   title={`Open ${c.label} (${c.code})`}
                 >
                   <div className="truncate">
@@ -653,7 +680,7 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
             onRowClick={(row) => setSelectedPhcCode(row.code)}
             onRowDoubleClick={(row) => {
               setSelectedPhcCode(null);
-              onOpenProduct(row);
+              onOpenProduct?.(row);
             }}
             emptyMessage={isResultsMode ? searchTitle : 'No products found'}
             loading={tableLoading}
@@ -669,7 +696,7 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
 
       {catCtx && (
         <div
-          className="fixed z-[1000] min-w-[160px] rounded border border-gray-300 bg-white shadow-md"
+          className="fixed z-[1000] min-w-[180px] rounded border border-gray-300 bg-white shadow-md"
           style={{ left: catCtx.x, top: catCtx.y }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -685,11 +712,11 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
           <button
             className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
             onClick={() => {
-              onDrillDownCategory?.(catCtx.cat);
+              onGoToDisplayCategory?.(catCtx.cat);
               setCatCtx(null);
             }}
           >
-            Drill Down
+            Go to Display Category
           </button>
         </div>
       )}

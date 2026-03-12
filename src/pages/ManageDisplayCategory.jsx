@@ -8,17 +8,45 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ManageDisplayCategory() {
   const [detail, setDetail] = useState({ open: false, code: null });
+  const [initialGroupCode, setInitialGroupCode] = useState('');
+  const [initialCategoryCode, setInitialCategoryCode] = useState('');
+
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const code = location?.state?.openCategoryCode;
-    if (!code) return;
-    setDetail({ open: true, code: String(code) });
+  const [openCategoryCode, setOpenCategoryCode] = useState('');
+  const [focusGroupCode, setFocusGroupCode] = useState('');
 
-    // clear one-time nav state so it doesn't reopen on refresh/back
+  useEffect(() => {
+    const state = location?.state ?? {};
+    const cat = String(state.openCategoryCode ?? '');
+    const grp = String(state.focusGroupCode ?? '');
+
+    if (!cat) return;
+
+    setInitialCategoryCode(cat);
+    setInitialGroupCode(grp);
+    setDetail({ open: true, code: cat });
+
+    // clear one-time state
     navigate(location.pathname, { replace: true, state: {} });
-  }, [location?.state, location.pathname, navigate]);
+  }, [location.state, location.pathname, navigate]);
+
+  const handleModifyCategory = (row) => {
+    const code = String(row?.code ?? '');
+    if (!code) return;
+    setDetail({ open: true, code });
+  };
+
+  const handleGoToProductsForSale = (row) => {
+    const code = String(row?.code ?? '');
+    if (!code) return;
+
+    const navTs = Date.now();
+    navigate(
+      `/product-manager/manage-products-for-sale?focusCategoryCode=${encodeURIComponent(code)}&navTs=${navTs}`
+    );
+  };
 
   return (
     <>
@@ -27,7 +55,11 @@ export default function ManageDisplayCategory() {
           <h2 className="text-white text-lg font-semibold">Display Category Search</h2>
         </div>
         <DisplayCategorySearch
+          initialGroupCode={initialGroupCode}
+          initialCategoryCode={initialCategoryCode}
           onOpenCategory={(row) => setDetail({ open: true, code: String(row?.code ?? '') })}
+          onModifyCategory={handleModifyCategory}
+          onGoToProductsForSale={handleGoToProductsForSale}
         />
       </div>
 
