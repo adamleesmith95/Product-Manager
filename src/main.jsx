@@ -5,14 +5,13 @@ import './index.css';
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataCacheProvider } from './context/DataCacheContext';
+import ManageDisplayCategory from './pages/ManageDisplayCategory';
 
-// If some files are .tsx, it's fine as long as tsconfig has allowJs: true and jsx: react-jsx
 import AppShell from './layout/AppShell';
 import { routes } from './routes';
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element #root not found');
-
 
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
@@ -27,6 +26,10 @@ ReactDOM.createRoot(rootEl).render(
             {routes.map((r) => (
               <Route key={r.path} path={r.path} element={r.element} />
             ))}
+            <Route
+              path="/product-manager/manage-display-category"
+              element={<ManageDisplayCategory />}
+            />
             <Route path="*" element={<div className="p-6">Not Found</div>} />
           </Route>
         </Routes>

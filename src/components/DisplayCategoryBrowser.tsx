@@ -81,6 +81,8 @@ type SearchFilters = {
 interface DisplayCategoryBrowserProps {
   initialCategoryCode?: string;
   onOpenProduct: (product: ProductRow) => void;
+  onModifyCategory?: (row: any) => void;
+  onDrillDownCategory?: (row: any) => void;
 }
 
 const PRODUCT_COLUMNS: ColumnDefinition<ProductRow>[] = [
@@ -143,7 +145,9 @@ const onResetColumns = () => {
 
 export default function DisplayCategoryBrowser({ 
   initialCategoryCode,
-  onOpenProduct 
+  onOpenProduct,
+  onModifyCategory,
+  onDrillDownCategory
 }: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
   const [catReloadNonce, setCatReloadNonce] = useState(0);
@@ -550,91 +554,145 @@ const [selectedCat, setSelectedCat] = useState<string>(initialCategoryCode ?? ""
     ? `${lastCatName} (${lastCatCode})`
     : "Products";
 
+  const [catCtx, setCatCtx] = useState<null | { x: number; y: number; cat: Category }>(null);
+
+  useEffect(() => {
+    const close = () => setCatCtx(null);
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCatCtx(null);
+    };
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onEsc);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
   return (
-    <BrowserLayout
-      sidebar={
-        <>
-          <div className="pm-sidebar-title">Display Categories</div>
-          <div className="pm-sidebar-scroll">
-            {cats.map((c) => (
+    <>
+      <BrowserLayout
+        sidebar={
+          <>
+            <div className="pm-sidebar-title">Display Categories</div>
+            <div className="pm-sidebar-scroll">
+              {cats.map((c) => (
+                <button
+                  key={c.code}
+                  id={`cat-${c.code}`}
+                  onClick={() => handleSelectCategory(c.code)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectCategory(c.code); // keep selection in sync
+                    setCatCtx({ x: e.clientX, y: e.clientY, cat: c });
+                  }}
+                  className={`pm-list-item ${selectedCat === c.code ? "pm-list-item--active" : ""}`}
+                  title={`Open ${c.label} (${c.code})`}
+                >
+                  <div className="truncate">
+                    {c.label}
+                    <span className="ml-2 text-[11px] text-neutral-500">({c.code})</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        }
+        searchPanel={
+          <>
+            <ProductHeaderSearch
+              onSearch={handleSearch}
+              onClear={handleClear}
+              onExport={() => console.log("Exporting selected products to Excel")}
+            />
+            <div className="pm-divider-bleed" />
+          </>
+        }
+        paneHeader={
+          <>
+            <div className="pm-pane-title">{headerTitle}</div>
+            <div className="flex items-center gap-2 grow justify-end">
+              <input
+                type="text"
+                placeholder="Search Code"
+                value={inlineCode}
+                onChange={(e) => setInlineCode(e.target.value)}
+                className="border rounded px-2 py-1 text-xs w-32"
+                aria-label="Search Code"
+              />
+              <input
+                type="text"
+                placeholder="Search Description"
+                value={inlineDesc}
+                onChange={(e) => setInlineDesc(e.target.value)}
+                className="border rounded px-2 py-1 text-xs w-48"
+                aria-label="Search Description"
+              />
               <button
-                key={c.code}
-                id={`cat-${c.code}`}
-                onClick={() => handleSelectCategory(c.code)}
-                className={`pm-list-item ${selectedCat === c.code ? "pm-list-item--active" : ""}`}
-                title={`Open ${c.label} (${c.code})`}
+                onClick={onResetColumns}
+                className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
+                title="Reset column widths to auto-fit content"
               >
-                <div className="truncate">
-                  {c.label}
-                  <span className="ml-2 text-[11px] text-neutral-500">({c.code})</span>
-                </div>
+                Reset Columns
               </button>
-            ))}
-          </div>
-        </>
-      }
-      searchPanel={
-        <>
-          <ProductHeaderSearch
-            onSearch={handleSearch}
-            onClear={handleClear}
-            onExport={() => console.log("Exporting selected products to Excel")}
+            </div>
+          </>
+        }
+        table={
+          <DataTable
+            columns={PRODUCT_COLUMNS}
+            data={rows}
+            rowKey="code"
+            storageKey="display-category-browser"
+            selectedRowKey={selectedPhcCode}
+            onRowClick={(row) => setSelectedPhcCode(row.code)}
+            onRowDoubleClick={(row) => {
+              setSelectedPhcCode(null);
+              onOpenProduct(row);
+            }}
+            emptyMessage={isResultsMode ? searchTitle : 'No products found'}
+            loading={tableLoading}
           />
-          <div className="pm-divider-bleed" />
-        </>
-      }
-      paneHeader={
-        <>
-          <div className="pm-pane-title">{headerTitle}</div>
-          <div className="flex items-center gap-2 grow justify-end">
-            <input
-              type="text"
-              placeholder="Search Code"
-              value={inlineCode}
-              onChange={(e) => setInlineCode(e.target.value)}
-              className="border rounded px-2 py-1 text-xs w-32"
-              aria-label="Search Code"
-            />
-            <input
-              type="text"
-              placeholder="Search Description"
-              value={inlineDesc}
-              onChange={(e) => setInlineDesc(e.target.value)}
-              className="border rounded px-2 py-1 text-xs w-48"
-              aria-label="Search Description"
-            />
-            <button
-              onClick={onResetColumns}
-              className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
-              title="Reset column widths to auto-fit content"
-            >
-              Reset Columns
-            </button>
-          </div>
-        </>
-      }
-      table={
-        <DataTable
-          columns={PRODUCT_COLUMNS}
-          data={rows}
-          rowKey="code"
-          storageKey="display-category-browser"
-          selectedRowKey={selectedPhcCode}
-          onRowClick={(row) => setSelectedPhcCode(row.code)}
-          onRowDoubleClick={(row) => {
-            setSelectedPhcCode(null);
-            onOpenProduct(row);
-          }}
-          emptyMessage={isResultsMode ? searchTitle : 'No products found'}
-          loading={tableLoading}
-        />
-      }
-      paneFooter={
-        <>
-          <button className="btn btn-light">New</button>
-          <button className="btn btn-light">Clone</button>
-        </>
-      }
-    />
+        }
+        paneFooter={
+          <>
+            <button className="btn btn-light">New</button>
+            <button className="btn btn-light">Clone</button>
+          </>
+        }
+      />
+
+      {catCtx && (
+        <div
+          className="fixed z-[1000] min-w-[160px] rounded border border-gray-300 bg-white shadow-md"
+          style={{ left: catCtx.x, top: catCtx.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
+            onClick={() => {
+              onModifyCategory?.(catCtx.cat);
+              setCatCtx(null);
+            }}
+          >
+            Modify
+          </button>
+          <button
+            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
+            onClick={() => {
+              onDrillDownCategory?.(catCtx.cat);
+              setCatCtx(null);
+            }}
+          >
+            Drill Down
+          </button>
+        </div>
+      )}
+    </>
   );
 }

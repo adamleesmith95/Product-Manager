@@ -27,6 +27,7 @@ type DataTableProps<T> = {
   storageKey: string;
   onRowClick?: (row: T) => void;
   onRowDoubleClick?: (row: T) => void;
+  onRowContextMenu?: (row: T, e: React.MouseEvent<HTMLTableRowElement>) => void;
   selectedRowKey?: string | number | null;
   emptyMessage?: string;
   className?: string;
@@ -43,6 +44,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     selectedRowKey,
     onRowClick,
     onRowDoubleClick,
+    onRowContextMenu,
     emptyMessage,
     className = '',
     loading,
@@ -187,42 +189,32 @@ export function DataTable<T>(props: DataTableProps<T>) {
           </tr>
         </thead>
         <tbody>
-          {sortedData.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length}>{emptyMessage ?? 'No data'}</td>
+          {data.map((row, idx) => (
+            <tr
+              key={String(row[rowKey] ?? idx)}
+              className={`pm-row ${selectedRowKey != null && String(selectedRowKey) === String(row[rowKey] ?? idx) ? 'pm-row--selected' : ''} ${
+                onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
+              }`}
+              onClick={() => onRowClick?.(row)}
+              onDoubleClick={() => onRowDoubleClick?.(row)}
+              onContextMenu={(e) => {
+                onRowContextMenu?.(row, e);
+              }}
+            >
+              {columns.map((col) => {
+                const value = row[col.key] as unknown;
+                const alignClass =
+                  col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
+                const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
+
+                return (
+                  <td key={String(col.key)} className={cellClassName}>
+                    {col.render ? col.render(value, row) : formatCellValue(value)}
+                  </td>
+                );
+              })}
             </tr>
-          ) : (
-            sortedData.map((row, idx) => {
-              const rawKey = row?.[rowKey];
-              const key = rawKey == null || rawKey === '' ? `row-${idx}` : String(rawKey);
-              const isSelected = selectedRowKey != null && String(selectedRowKey) === key;
-
-              return (
-                <tr
-                  key={key}
-                  id={`row-${key}`}
-                  className={`pm-row ${isSelected ? 'pm-row--selected' : ''} ${
-                    onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
-                  }`}
-                  onClick={() => onRowClick?.(row)}
-                  onDoubleClick={() => onRowDoubleClick?.(row)}
-                >
-                  {columns.map((col) => {
-                    const value = row[col.key] as unknown;
-                    const alignClass =
-                      col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
-                    const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
-
-                    return (
-                      <td key={String(col.key)} className={cellClassName}>
-                        {col.render ? col.render(value, row) : formatCellValue(value)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })
-          )}
+          ))}
         </tbody>
       </table>
       {loading && (

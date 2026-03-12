@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DisplayCategorySearch from '../components/DisplayCategorySearch';
 import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DC_GeneralTab from '../tabs/DC_GeneralTab';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ManageDisplayCategory() {
   const [detail, setDetail] = useState({ open: false, code: null });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const code = location?.state?.openCategoryCode;
+    if (!code) return;
+    setDetail({ open: true, code: String(code) });
+
+    // clear one-time nav state so it doesn't reopen on refresh/back
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location?.state, location.pathname, navigate]);
 
   return (
     <>
