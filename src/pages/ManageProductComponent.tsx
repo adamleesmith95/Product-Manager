@@ -13,16 +13,29 @@ export default function ManageProductComponent() {
   const USE_INLINE_PREVIEW = true;
   const [selectedProductCode, setSelectedProductCode] = useState<number | null>(null);
 
-  const [detail, setDetail] = useState<{ open: boolean; productCode: number | null }>({
+  type ProductComponentDetailState = {
+    open: boolean;
+    productCode: number | null;
+    productDescription: string;
+  };
+
+  const [detail, setDetail] = useState<ProductComponentDetailState>({
     open: false,
     productCode: null,
+    productDescription: '',
   });
   const [activeTab, setActiveTab] = useState<'general' | 'additional'>('general');
 
   const handleOpenProduct = (row: any) => {
     const code = Number(row?.code ?? row?.productCode);
-    setDetail({ open: true, productCode: code });
-    setActiveTab('general');
+    const description = String(
+      row?.description ?? row?.productDescription ?? row?.label ?? row?.name ?? ''
+    );
+    setDetail({
+      open: true,
+      productCode: Number.isFinite(code) ? code : null,
+      productDescription: description,
+    });
   };
 
   const handleClose = () => setDetail((s) => ({ ...s, open: false }));
@@ -49,7 +62,11 @@ export default function ManageProductComponent() {
       <Modal
         open={detail.open}
         onClose={handleClose}
-        title={`Manage Product Component — ${detail.productCode ?? ''}`}
+        title={
+          detail.productCode != null
+            ? `Manage Product Component — ${(detail.productDescription || 'Product Component')} (${detail.productCode})`
+            : 'Manage Product Component'
+        }
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"

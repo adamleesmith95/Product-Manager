@@ -7,7 +7,25 @@ import DC_GeneralTab from '../tabs/DC_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ManageDisplayCategory() {
-  const [detail, setDetail] = useState({ open: false, code: null });
+  type DisplayCategoryDetailState = {
+    open: boolean;
+    code: string;
+    description: string;
+  };
+
+  type DisplayCategoryRow = {
+    code?: string | number;
+    description?: string;
+    label?: string;
+    name?: string;
+    [key: string]: unknown;
+  };
+
+  const [detail, setDetail] = useState<DisplayCategoryDetailState>({
+    open: false,
+    code: '',
+    description: '',
+  });
   const [initialGroupCode, setInitialGroupCode] = useState('');
   const [initialCategoryCode, setInitialCategoryCode] = useState('');
 
@@ -26,7 +44,7 @@ export default function ManageDisplayCategory() {
 
     setInitialCategoryCode(cat);
     setInitialGroupCode(grp);
-    setDetail({ open: true, code: cat });
+    setDetail({ open: true, code: cat, description: '' });
 
     // clear one-time state
     navigate(location.pathname, { replace: true, state: {} });
@@ -35,7 +53,7 @@ export default function ManageDisplayCategory() {
   const handleModifyCategory = (row) => {
     const code = String(row?.code ?? '');
     if (!code) return;
-    setDetail({ open: true, code });
+    setDetail((prev) => ({ ...prev, open: true, code: String(code) }));
   };
 
   const handleGoToProductsForSale = (row) => {
@@ -48,6 +66,14 @@ export default function ManageDisplayCategory() {
     );
   };
 
+  const handleOpenCategory = (row: DisplayCategoryRow) => {
+    setDetail({
+      open: true,
+      code: String(row?.code ?? ''),
+      description: String(row?.description ?? row?.label ?? row?.name ?? ''),
+    });
+  };
+
   return (
     <>
       <div className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
@@ -57,7 +83,7 @@ export default function ManageDisplayCategory() {
         <DisplayCategorySearch
           initialGroupCode={initialGroupCode}
           initialCategoryCode={initialCategoryCode}
-          onOpenCategory={(row) => setDetail({ open: true, code: String(row?.code ?? '') })}
+          onOpenCategory={handleOpenCategory}
           onModifyCategory={handleModifyCategory}
           onGoToProductsForSale={handleGoToProductsForSale}
         />
@@ -66,7 +92,11 @@ export default function ManageDisplayCategory() {
       <Modal
         open={detail.open}
         onClose={() => setDetail((s) => ({ ...s, open: false }))}
-        title={`Manage Display Category — ${detail.code ?? ''}`}
+        title={
+          detail.code
+            ? `Manage Display Category — ${detail.description || 'Category'} (${detail.code})`
+            : 'Manage Display Category'
+        }
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"

@@ -6,7 +6,25 @@ import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DG_GeneralTab from '../tabs/DG_GeneralTab';
 
 export default function ManageDisplayGroup() {
-  const [detail, setDetail] = useState<{ open: boolean; code: string | null }>({ open: false, code: null });
+  type DisplayGroupDetailState = {
+    open: boolean;
+    code: string;
+    description: string;
+  };
+
+  const [detail, setDetail] = useState<DisplayGroupDetailState>({
+    open: false,
+    code: '',
+    description: '',
+  });
+
+  const handleOpenGroup = (row: any) => {
+    setDetail({
+      open: true,
+      code: String(row?.code ?? ''),
+      description: String(row?.description ?? row?.label ?? row?.name ?? ''),
+    });
+  };
 
   return (
     <>
@@ -15,14 +33,18 @@ export default function ManageDisplayGroup() {
           <h2 className="text-white text-lg font-semibold">Display Group Search</h2>
         </div>
         <DisplayGroupSearch
-          onOpenGroup={(row: any) => setDetail({ open: true, code: String(row?.code ?? '') })}
+          onOpenGroup={handleOpenGroup}
         />
       </div>
 
       <Modal
         open={detail.open}
         onClose={() => setDetail((s) => ({ ...s, open: false }))}
-        title={`Manage Display Group — ${detail.code ?? ''}`}
+        title={
+          detail.code
+            ? `Manage Display Group — ${detail.description || 'Display Group'} (${detail.code})`
+            : 'Manage Display Group'
+        }
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"
