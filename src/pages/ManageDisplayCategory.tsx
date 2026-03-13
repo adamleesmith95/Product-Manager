@@ -6,6 +6,8 @@ import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DC_GeneralTab from '../tabs/DC_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+type Anchor = { code: string; ts: number } | null;
+
 export default function ManageDisplayCategory() {
   type DisplayCategoryDetailState = {
     open: boolean;
@@ -26,52 +28,68 @@ export default function ManageDisplayCategory() {
     code: '',
     description: '',
   });
-  const [initialGroupCode, setInitialGroupCode] = useState('');
-  const [initialCategoryCode, setInitialCategoryCode] = useState('');
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [openCategoryCode, setOpenCategoryCode] = useState('');
-  const [focusGroupCode, setFocusGroupCode] = useState('');
+  const [groupAnchor, setGroupAnchor] = useState<Anchor>(null);
+  const [categoryAnchor, setCategoryAnchor] = useState<Anchor>(null);
 
   useEffect(() => {
-    const state = location?.state ?? {};
-    const cat = String(state.openCategoryCode ?? '');
-    const grp = String(state.focusGroupCode ?? '');
+    const qs = new URLSearchParams(location.search);
+    const qsGroup = String(qs.get('focusGroupCode') ?? '');
+    const qsCategory = String(qs.get('focusCategoryCode') ?? '');
+    const qsTs = Number(qs.get('navTs') ?? 0);
 
-    if (!cat) return;
+    const state: any = location.state ?? {};
+    const stateCategory = String(state.openCategoryCode ?? '');
+    const stateGroup = String(state.focusGroupCode ?? '');
+    const stateDescription = String(state.description ?? state.label ?? '');
 
-    setInitialCategoryCode(cat);
-    setInitialGroupCode(grp);
-    setDetail({ open: true, code: cat, description: '' });
+    const categoryCode = qsCategory || stateCategory;
+    const groupCode = qsGroup || stateGroup;
+    const ts = qsTs || (categoryCode || groupCode ? Date.now() : 0);
 
-    // clear one-time state
+    if (!categoryCode && !groupCode) return;
+
+    if (groupCode) setGroupAnchor({ code: groupCode, ts: ts || Date.now() });
+    if (categoryCode) setCategoryAnchor({ code: categoryCode, ts: ts || Date.now() });
+
+    if (stateCategory) {
+      setDetail({
+        open: true,
+        code: stateCategory,
+        description: stateDescription,
+      });
+    }
+
     navigate(location.pathname, { replace: true, state: {} });
-  }, [location.state, location.pathname, navigate]);
+  }, [location.search, location.state, location.pathname, navigate]);
 
-  const handleModifyCategory = (row) => {
-    const code = String(row?.code ?? '');
-    if (!code) return;
-    setDetail((prev) => ({ ...prev, open: true, code: String(code) }));
-  };
-
-  const handleGoToProductsForSale = (row) => {
-    const code = String(row?.code ?? '');
-    if (!code) return;
-
-    const navTs = Date.now();
-    navigate(
-      `/product-manager/manage-products-for-sale?focusCategoryCode=${encodeURIComponent(code)}&navTs=${navTs}`
-    );
-  };
-
-  const handleOpenCategory = (row: DisplayCategoryRow) => {
+  const handleOpenCategory = (row: any) => {
     setDetail({
       open: true,
       code: String(row?.code ?? ''),
-      description: String(row?.description ?? row?.label ?? row?.name ?? ''),
+      description: String(row?.label ?? row?.description ?? row?.name ?? ''),
     });
+  };
+
+  const handleModifyCategory = (row: any) => {
+    const code = String(row?.code ?? '');
+    if (!code) return;
+    setDetail({
+      open: true,
+      code,
+      description: String(row?.label ?? row?.description ?? row?.name ?? ''),
+    });
+  };
+
+  const handleGoToProductsForSale = (row: any) => {
+    const code = String(row?.code ?? '');
+    if (!code) return;
+    navigate(
+      `/product-manager/manage-products-for-sale?focusCategoryCode=${encodeURIComponent(code)}&navTs=${Date.now()}`
+    );
   };
 
   return (
@@ -81,8 +99,8 @@ export default function ManageDisplayCategory() {
           <h2 className="text-white text-lg font-semibold">Display Category Search</h2>
         </div>
         <DisplayCategorySearch
-          initialGroupCode={initialGroupCode}
-          initialCategoryCode={initialCategoryCode}
+          groupAnchor={groupAnchor}
+          categoryAnchor={categoryAnchor}
           onOpenCategory={handleOpenCategory}
           onModifyCategory={handleModifyCategory}
           onGoToProductsForSale={handleGoToProductsForSale}
@@ -100,9 +118,7 @@ export default function ManageDisplayCategory() {
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"
-        onSave={() => {
-          // TODO: wire API save
-        }}
+        onSave={() => {}}
       >
         <ModalSessionProvider>
           <div className="pm-tab-host">

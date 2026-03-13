@@ -20,11 +20,11 @@ type ProductRow = {
 };
 
 type DetailState = { open: boolean; product?: ProductRow };
-type DC_DetailState = { open: boolean; code: string | null };
+type DC_DetailState = { open: boolean; code: string | null; description?: string };
 
 export default function ManageProductsForSalePage() {
   const [detail, setDetail] = useState<{ open: boolean; product?: ProductRow }>({ open: false, product: undefined });
-  const [dcDetail, setDcDetail] = useState<DC_DetailState>({ open: false, code: null }); // ADD THIS
+  const [dcDetail, setDcDetail] = useState<DC_DetailState>({ open: false, code: null, description: '' });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,7 +54,11 @@ export default function ManageProductsForSalePage() {
     setCategoryAnchor({ code: focusCategoryCode, ts: navTs });
 
     if (openCategoryModal) {
-      setDcDetail({ open: true, code: focusCategoryCode });
+      setDcDetail({
+        open: true,
+        code: focusCategoryCode,
+        description: String(state.description ?? ''),
+      });
     }
 
     navigate(location.pathname, { replace: true, state: {} });
@@ -109,22 +113,22 @@ export default function ManageProductsForSalePage() {
     }
   };
 
-  const handleModifyCategory = (row: ProductRow) => {
-    const code = String(row?.code ?? '');
+  const handleModifyCategory = (row: any) => {
+    const code = String(row?.code ?? row?.categoryCode ?? row?.displayCategoryCode ?? '');
+    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
     if (!code) return;
-    setDcDetail({ open: true, code });
+    setDcDetail({ open: true, code, description });
   };
 
-  const handleGoToDisplayCategory = (row: ProductRow) => {
-    const code = String(row?.code ?? '');
+  const handleGoToDisplayCategory = (row: any) => {
+    const code = String(row?.code ?? row?.categoryCode ?? row?.displayCategoryCode ?? '');
+    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
     if (!code) return;
-
     navigate('/product-manager/manage-display-category', {
       state: {
         openCategoryCode: code,
-        focusGroupCode: String(
-          row?.displayGroupCode ?? row?.groupCode ?? row?.display_group_code ?? ''
-        ),
+        focusGroupCode: String(row?.displayGroupCode ?? row?.groupCode ?? row?.display_group_code ?? ''),
+        description,
       },
     });
   };
@@ -163,13 +167,15 @@ export default function ManageProductsForSalePage() {
       <Modal
         open={dcDetail.open}
         onClose={() => setDcDetail((s) => ({ ...s, open: false }))}
-        title={`Manage Display Category — ${dcDetail.code ?? ''}`}
+        title={
+          dcDetail.code
+            ? `Manage Display Category — ${dcDetail.description || 'Category'} (${dcDetail.code})`
+            : 'Manage Display Category'
+        }
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"
-        onSave={() => {
-          // TODO: save detail edits
-        }}
+        onSave={() => {}}
       >
         <ModalSessionProvider>
           <div className="pm-tab-host">

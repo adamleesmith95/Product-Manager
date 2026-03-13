@@ -22,6 +22,8 @@ const DISPLAY_CATEGORY_COLUMNS = [
 
 const TABLE_STORAGE_KEY = 'display-category-search';
 
+type Anchor = { code: string; ts: number } | null;
+
 type Props = {
   onOpenCategory?: (row: any) => void;
   onSelectCategory?: (row: any) => void;
@@ -32,8 +34,8 @@ type Props = {
   newLabel?: string;
   cloneLabel?: string;
   inlineDetailPanel?: ReactNode;
-  initialGroupCode?: string;
-  initialCategoryCode?: string;
+  groupAnchor?: Anchor;
+  categoryAnchor?: Anchor;
 };
 
 export default function DisplayCategorySearch({
@@ -46,8 +48,8 @@ export default function DisplayCategorySearch({
   newLabel,
   cloneLabel,
   inlineDetailPanel,
-  initialGroupCode = '',
-  initialCategoryCode = '',
+  groupAnchor = null,
+  categoryAnchor = null,
 }: Props) {
   const { cache, setCache } = useDataCache();
 
@@ -55,6 +57,7 @@ export default function DisplayCategorySearch({
   const [tree, setTree] = useState([]);
   const [selectedGroupCode, setSelectedGroupCode] = useState<string>('');
   const [selectedCategoryCode, setSelectedCategoryCode] = useState<string>('');
+  const [ctx, setCtx] = useState<{ x: number; y: number; row: any } | null>(null);
 
   const groupBtnRefs = useRef({});
 
@@ -231,36 +234,59 @@ export default function DisplayCategorySearch({
     // handle clone category logic
   };
 
-  // after groups load, preselect group
-  useEffect(() => {
-    if (!initialGroupCode) return;
-    setSelectedGroupCode(initialGroupCode);
-  }, [initialGroupCode]);
+  const appliedAnchorTsRef = useRef<number>(0);
 
-  // after category list for selected group loads, preselect category
-  useEffect(() => {
-    if (!initialCategoryCode) return;
-    setSelectedCategoryCode(initialCategoryCode);
-  }, [initialCategoryCode]);
-
-  // NEW: context menu state
-  const [ctx, setCtx] = useState<null | { x: number; y: number; row: any }>(null);
-
-  // NEW: close context menu on outside click / scroll / resize / escape
   useEffect(() => {
     const close = () => setCtx(null);
-    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setCtx(null);
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('click', close);
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
     window.addEventListener('keydown', onEsc);
     return () => {
       window.removeEventListener('click', close);
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
       window.removeEventListener('keydown', onEsc);
     };
   }, []);
+
+  // Stage 1: apply group anchor once tree is loaded
+  useEffect(() => {
+    if (!tree?.length) return;
+    const ts = Number(groupAnchor?.ts ?? categoryAnchor?.ts ?? 0);
+    if (!ts || appliedAnchorTsRef.current === ts) return;
+
+    let targetGroup = String(groupAnchor?.code ?? '');
+    const wantedCategory = String(categoryAnchor?.code ?? '');
+
+    // infer group from category if not explicitly provided
+    if (!targetGroup && wantedCategory) {
+      for (const g of tree as any[]) {
+        const cats = Array.isArray(g?.categories) ? g.categories : [];
+        const hit = cats.find((c: any) => String(c?.code ?? '') === wantedCategory);
+        if (hit) {
+          targetGroup = String(g?.groupCode ?? '');
+          break;
+        }
+      }
+    }
+
+    if (targetGroup) setSelectedGroupCode(targetGroup);
+    appliedAnchorTsRef.current = ts;
+    console.log('[DCS] stage1 group anchor applied', { targetGroup, ts });
+  }, [tree, groupAnchor, categoryAnchor]);
+
+  // Stage 2: apply category anchor after categories for selected group load
+  useEffect(() => {
+    const wantedCategory = String(categoryAnchor?.code ?? '');
+    const ts = Number(categoryAnchor?.ts ?? 0);
+    if (!wantedCategory || !ts) return;
+    if (!categories?.length) return;
+
+    const match = categories.find((c: any) => String(c?.code ?? '') === wantedCategory);
+    if (!match) return;
+
+    setSelectedCategoryCode(wantedCategory);
+    onSelectCategory?.(match);
+    console.log('[DCS] stage2 category anchor applied', { wantedCategory });
+  }, [categories, categoryAnchor, onSelectCategory]);
 
   return (
     <>
