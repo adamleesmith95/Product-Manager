@@ -4,9 +4,11 @@ import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DC_GeneralTab from '../tabs/DC_GeneralTab';
+import DG_GeneralTab from '../tabs/DG_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 type Anchor = { code: string; ts: number } | null;
+type DG_DetailState = { open: boolean; code: string; description: string };
 
 export default function ManageDisplayCategory() {
   type DisplayCategoryDetailState = {
@@ -29,8 +31,8 @@ export default function ManageDisplayCategory() {
     description: '',
   });
 
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [groupAnchor, setGroupAnchor] = useState<Anchor>(null);
   const [categoryAnchor, setCategoryAnchor] = useState<Anchor>(null);
@@ -92,6 +94,34 @@ export default function ManageDisplayCategory() {
     );
   };
 
+  const handleModifyGroup = (row: any) => {
+    const code = String(row?.groupCode ?? row?.code ?? row?.displayGroupCode ?? '');
+    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
+    if (!code) return;
+    setDgDetail({ open: true, code, description });
+  };
+
+  const handleGoToDisplayGroup = (row: any) => {
+    const code = String(row?.groupCode ?? row?.code ?? row?.displayGroupCode ?? '');
+    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
+    if (!code) return;
+
+    navigate('/product-manager/manage-display-group', {
+      state: {
+        focusGroupCode: code,
+        openGroupCode: code,
+        description,
+        navTs: Date.now(),
+      },
+    });
+  };
+
+  const [dgDetail, setDgDetail] = useState<DG_DetailState>({
+    open: false,
+    code: '',
+    description: '',
+  });
+
   return (
     <>
       <div className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
@@ -104,9 +134,12 @@ export default function ManageDisplayCategory() {
           onOpenCategory={handleOpenCategory}
           onModifyCategory={handleModifyCategory}
           onGoToProductsForSale={handleGoToProductsForSale}
+          onModifyGroup={handleModifyGroup}
+          onGoToDisplayGroup={handleGoToDisplayGroup}
         />
       </div>
 
+      {/* Display Category modal (restore this) */}
       <Modal
         open={detail.open}
         onClose={() => setDetail((s) => ({ ...s, open: false }))}
@@ -127,6 +160,32 @@ export default function ManageDisplayCategory() {
             </div>
             <div className="pm-tab-body pm-form-shell">
               <DC_GeneralTab categoryCode={detail.code} isActive />
+            </div>
+          </div>
+        </ModalSessionProvider>
+      </Modal>
+
+      {/* Display Group modal (keep this) */}
+      <Modal
+        open={dgDetail.open}
+        onClose={() => setDgDetail((s) => ({ ...s, open: false }))}
+        title={
+          dgDetail.code
+            ? `Manage Display Group — ${dgDetail.description || 'Group'} (${dgDetail.code})`
+            : 'Manage Display Group'
+        }
+        headerClassName="pcphc-modal-header"
+        titleClassName="pcphc-modal-title"
+        panelClassName="pcphc-modal-panel"
+        onSave={() => {}}
+      >
+        <ModalSessionProvider>
+          <div className="pm-tab-host">
+            <div className="pm-tabs-row">
+              <ModalTabButton active onClick={() => {}}>General</ModalTabButton>
+            </div>
+            <div className="pm-tab-body pm-form-shell">
+              <DG_GeneralTab groupCode={dgDetail.code} isActive />
             </div>
           </div>
         </ModalSessionProvider>

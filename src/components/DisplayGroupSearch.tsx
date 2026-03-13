@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { useState, useCallback, useMemo, ReactNode, useEffect, useRef } from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useBrowserData } from '../hooks/useBrowserData';
@@ -18,7 +18,9 @@ const COLUMNS = [
   { key: 'updated', label: 'Updated', width: 120, maxWidth: 240, sortType: 'string' as const },
 ];
 
-interface Props {
+type Anchor = { code: string; ts: number } | null;
+
+type Props = {
   onOpenGroup?: (row: any) => void;
   onSelectGroup?: (row: any) => void;
   onNew?: () => void;
@@ -26,7 +28,8 @@ interface Props {
   newLabel?: string;
   cloneLabel?: string;
   inlineDetailPanel?: ReactNode;
-}
+  groupAnchor?: Anchor;
+};
 
 export default function DisplayGroupSearch({
   onOpenGroup,
@@ -36,10 +39,12 @@ export default function DisplayGroupSearch({
   newLabel,
   cloneLabel,
   inlineDetailPanel,
+  groupAnchor = null,
 }: Props) {
   const [filters, setFilters] = useState({ code: '', description: '' });
   const [appliedFilters, setAppliedFilters] = useState({ code: '', description: '' });
   const [selectedGroupCode, setSelectedGroupCode] = useState<string | null>(null);
+  const appliedAnchorTsRef = useRef<number>(0);
 
   const fetchDisplayGroups = useCallback(async (signal) => {
     const res = await fetch('/api/display-groups', { signal });
@@ -96,6 +101,20 @@ export default function DisplayGroupSearch({
     resetTableColumns(TABLE_STORAGE_KEY);
     window.location.reload();
   };
+
+  useEffect(() => {
+    const code = String(groupAnchor?.code ?? '');
+    const ts = Number(groupAnchor?.ts ?? 0);
+    if (!code || !ts) return;
+    if (appliedAnchorTsRef.current === ts) return;
+
+    setSelectedGroupCode(code);
+
+    const match = tableRows.find((r: any) => String(r?.code ?? r?.groupCode ?? '') === code);
+    if (match) onSelectGroup?.(match);
+
+    appliedAnchorTsRef.current = ts;
+  }, [groupAnchor, tableRows, onSelectGroup]);
 
   return (
     <BrowserLayout

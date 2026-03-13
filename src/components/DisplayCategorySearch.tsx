@@ -29,6 +29,8 @@ type Props = {
   onSelectCategory?: (row: any) => void;
   onModifyCategory?: (row: any) => void;
   onGoToProductsForSale?: (row: any) => void;
+  onModifyGroup?: (row: any) => void;
+  onGoToDisplayGroup?: (row: any) => void;
   onNew?: () => void;
   onClone?: () => void;
   newLabel?: string;
@@ -43,6 +45,8 @@ export default function DisplayCategorySearch({
   onSelectCategory,
   onModifyCategory,
   onGoToProductsForSale,
+  onModifyGroup,
+  onGoToDisplayGroup,
   onNew,
   onClone,
   newLabel,
@@ -58,6 +62,7 @@ export default function DisplayCategorySearch({
   const [selectedGroupCode, setSelectedGroupCode] = useState<string>('');
   const [selectedCategoryCode, setSelectedCategoryCode] = useState<string>('');
   const [ctx, setCtx] = useState<{ x: number; y: number; row: any } | null>(null);
+  const [groupCtx, setGroupCtx] = useState<{ x: number; y: number; group: any } | null>(null);
 
   const groupBtnRefs = useRef({});
 
@@ -237,7 +242,10 @@ export default function DisplayCategorySearch({
   const appliedAnchorTsRef = useRef<number>(0);
 
   useEffect(() => {
-    const close = () => setCtx(null);
+    const close = () => {
+      setCtx(null);
+      setGroupCtx(null);
+    };
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('click', close);
     window.addEventListener('keydown', onEsc);
@@ -302,6 +310,11 @@ export default function DisplayCategorySearch({
                     key={group.groupCode}
                     type="button"
                     onClick={() => handleSelectGroup(group.groupCode)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setGroupCtx({ x: e.clientX, y: e.clientY, group });
+                    }}
                     className={`pm-list-item ${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
                     title={group.label}
                     ref={(el) => { groupBtnRefs.current[String(group.groupCode)] = el; }}
@@ -412,6 +425,30 @@ export default function DisplayCategorySearch({
               onClick: () => {
                 onGoToProductsForSale?.(ctx.row);
                 setCtx(null);
+              },
+            },
+          ]}
+        />
+      )}
+      {groupCtx && (
+        <RowContextMenu
+          x={groupCtx.x}
+          y={groupCtx.y}
+          actions={[
+            {
+              key: 'modify-group',
+              label: 'Modify',
+              onClick: () => {
+                onModifyGroup?.(groupCtx.group);
+                setGroupCtx(null);
+              },
+            },
+            {
+              key: 'goto-display-group',
+              label: 'Go to Display Group',
+              onClick: () => {
+                onGoToDisplayGroup?.(groupCtx.group);
+                setGroupCtx(null);
               },
             },
           ]}

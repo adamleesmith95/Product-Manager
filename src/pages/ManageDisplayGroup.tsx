@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DisplayGroupSearch from '../components/DisplayGroupSearch';
 import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DG_GeneralTab from '../tabs/DG_GeneralTab';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+type Anchor = { code: string; ts: number } | null;
 
 export default function ManageDisplayGroup() {
   type DisplayGroupDetailState = {
@@ -12,11 +15,15 @@ export default function ManageDisplayGroup() {
     description: string;
   };
 
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [detail, setDetail] = useState<DisplayGroupDetailState>({
     open: false,
     code: '',
     description: '',
   });
+  const [groupAnchor, setGroupAnchor] = useState<Anchor>(null);
 
   const handleOpenGroup = (row: any) => {
     setDetail({
@@ -26,6 +33,30 @@ export default function ManageDisplayGroup() {
     });
   };
 
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    const state: any = location.state ?? {};
+
+    const focusGroupCode = String(qs.get('focusGroupCode') ?? state.focusGroupCode ?? '');
+    const openGroupCode = String(qs.get('openGroupCode') ?? state.openGroupCode ?? '');
+    const description = String(state.description ?? '');
+    const navTs = Number(qs.get('navTs') ?? state.navTs ?? 0) || Date.now();
+
+    if (focusGroupCode) setGroupAnchor({ code: focusGroupCode, ts: navTs });
+
+    if (openGroupCode) {
+      setDetail({
+        open: true,
+        code: openGroupCode,
+        description,
+      });
+    }
+
+    if (state && Object.keys(state).length) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.search, location.state, location.pathname, navigate]);
+
   return (
     <>
       <div className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
@@ -34,6 +65,7 @@ export default function ManageDisplayGroup() {
         </div>
         <DisplayGroupSearch
           onOpenGroup={handleOpenGroup}
+          groupAnchor={groupAnchor}
         />
       </div>
 
