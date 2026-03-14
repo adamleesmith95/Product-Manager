@@ -33,6 +33,23 @@ export default function ManageDisplayGroup() {
     });
   };
 
+  const handleGoToDisplayCategory = (row: any) => {
+    const groupCode = String(row?.code ?? row?.groupCode ?? row?.displayGroupCode ?? '');
+    const description = String(row?.label ?? row?.description ?? '');
+    console.log('[MDG] handleGoToDisplayCategory called', { row, groupCode, description });
+    if (!groupCode) {
+      console.warn('[MDG] no groupCode found on row', row);
+      return;
+    }
+    navigate('/product-manager/manage-display-category', {
+      state: {
+        focusGroupCode: groupCode,
+        description,
+        navTs: Date.now(),
+      },
+    });
+  };
+
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const state: any = location.state ?? {};
@@ -45,14 +62,11 @@ export default function ManageDisplayGroup() {
     if (focusGroupCode) setGroupAnchor({ code: focusGroupCode, ts: navTs });
 
     if (openGroupCode) {
-      setDetail({
-        open: true,
-        code: openGroupCode,
-        description,
-      });
+      setDetail({ open: true, code: openGroupCode, description });
     }
 
-    if (state && Object.keys(state).length) {
+    // consume state once
+    if (Object.keys(state).length) {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.search, location.state, location.pathname, navigate]);
@@ -64,8 +78,9 @@ export default function ManageDisplayGroup() {
           <h2 className="text-white text-lg font-semibold">Display Group Search</h2>
         </div>
         <DisplayGroupSearch
-          onOpenGroup={handleOpenGroup}
           groupAnchor={groupAnchor}
+          onOpenGroup={handleOpenGroup}
+          onGoToDisplayCategory={handleGoToDisplayCategory}
         />
       </div>
 

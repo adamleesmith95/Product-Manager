@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DisplayCategorySearch from '../components/DisplayCategorySearch';
 import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
@@ -37,13 +37,19 @@ export default function ManageDisplayCategory() {
   const [groupAnchor, setGroupAnchor] = useState<Anchor>(null);
   const [categoryAnchor, setCategoryAnchor] = useState<Anchor>(null);
 
+  const stateConsumedRef = useRef(false);
+
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
+    const state: any = location.state ?? {};
+
+    console.log('[MDC] location.state received', state);
+    console.log('[MDC] location.search received', location.search);
+
     const qsGroup = String(qs.get('focusGroupCode') ?? '');
     const qsCategory = String(qs.get('focusCategoryCode') ?? '');
     const qsTs = Number(qs.get('navTs') ?? 0);
 
-    const state: any = location.state ?? {};
     const stateCategory = String(state.openCategoryCode ?? '');
     const stateGroup = String(state.focusGroupCode ?? '');
     const stateDescription = String(state.description ?? state.label ?? '');
@@ -52,20 +58,36 @@ export default function ManageDisplayCategory() {
     const groupCode = qsGroup || stateGroup;
     const ts = qsTs || (categoryCode || groupCode ? Date.now() : 0);
 
-    if (!categoryCode && !groupCode) return;
+    console.log('[MDC] parsed', { qsGroup, stateGroup, groupCode, categoryCode, ts });
+
+    // only process if we have real anchor data AND haven't consumed it yet
+    if (!categoryCode && !groupCode) {
+      console.warn('[MDC] no anchor codes found, skipping');
+      return;
+    }
+
+    // prevent second fire from navigate(...state:{}) overwriting anchors
+    if (stateConsumedRef.current) {
+      console.log('[MDC] state already consumed, skipping');
+      return;
+    }
+    stateConsumedRef.current = true;
 
     if (groupCode) setGroupAnchor({ code: groupCode, ts: ts || Date.now() });
     if (categoryCode) setCategoryAnchor({ code: categoryCode, ts: ts || Date.now() });
 
     if (stateCategory) {
-      setDetail({
-        open: true,
-        code: stateCategory,
-        description: stateDescription,
-      });
+      setDetail({ open: true, code: stateCategory, description: stateDescription });
     }
 
-    navigate(location.pathname, { replace: true, state: {} });
+    // clear state from URL without re-triggering anchor logic
+    if (Object.keys(state).length) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+
+    // reset ref after a tick so next genuine navigation works
+    setTimeout(() => { stateConsumedRef.current = false; }, 500);
+
   }, [location.search, location.state, location.pathname, navigate]);
 
   const handleOpenCategory = (row: any) => {

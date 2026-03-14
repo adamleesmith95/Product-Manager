@@ -64,7 +64,7 @@ export default function DisplayCategorySearch({
   const [ctx, setCtx] = useState<{ x: number; y: number; row: any } | null>(null);
   const [groupCtx, setGroupCtx] = useState<{ x: number; y: number; group: any } | null>(null);
 
-  const groupBtnRefs = useRef({});
+  const groupBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const [searchTitle, setSearchTitle] = useState('');
   const [resultRows, setResultRows] = useState([]);
@@ -255,16 +255,21 @@ export default function DisplayCategorySearch({
     };
   }, []);
 
+  const pendingScrollGroupRef = useRef<string>('');
+
   // Stage 1: apply group anchor once tree is loaded
   useEffect(() => {
+    console.log('[DCS] stage1 effect fired', { tree: tree?.length, groupAnchor, categoryAnchor });
     if (!tree?.length) return;
     const ts = Number(groupAnchor?.ts ?? categoryAnchor?.ts ?? 0);
-    if (!ts || appliedAnchorTsRef.current === ts) return;
+    if (!ts || appliedAnchorTsRef.current === ts) {
+      console.log('[DCS] stage1 skipped', { ts, applied: appliedAnchorTsRef.current });
+      return;
+    }
 
     let targetGroup = String(groupAnchor?.code ?? '');
     const wantedCategory = String(categoryAnchor?.code ?? '');
 
-    // infer group from category if not explicitly provided
     if (!targetGroup && wantedCategory) {
       for (const g of tree as any[]) {
         const cats = Array.isArray(g?.categories) ? g.categories : [];
@@ -276,10 +281,50 @@ export default function DisplayCategorySearch({
       }
     }
 
-    if (targetGroup) setSelectedGroupCode(targetGroup);
+    console.log('[DCS] stage1 applying', { targetGroup, wantedCategory, ts });
+    if (targetGroup) {
+      pendingScrollGroupRef.current = targetGroup;
+      setSelectedGroupCode(targetGroup);
+    }
     appliedAnchorTsRef.current = ts;
-    console.log('[DCS] stage1 group anchor applied', { targetGroup, ts });
   }, [tree, groupAnchor, categoryAnchor]);
+
+  // Scroll left-pane button into view AFTER React re-renders with new selectedGroupCode
+  useEffect(() => {
+    const target = pendingScrollGroupRef.current;
+    if (!target) return;
+    if (String(selectedGroupCode) !== target) return;
+
+    const attemptScroll = (attemptsLeft: number) => {
+      const el = groupBtnRefs.current[target];
+      if (el) {
+        // scroll within sidebar container directly
+        const sidebar = sidebarScrollRef.current;
+        if (sidebar) {
+          const elTop = el.offsetTop;
+          const elHeight = el.offsetHeight;
+          const sidebarHeight = sidebar.clientHeight;
+          sidebar.scrollTo({
+            top: elTop - sidebarHeight / 2 + elHeight / 2,
+            behavior: 'smooth',
+          });
+          console.log('[DCS] scrolled sidebar to', target, { elTop, sidebarHeight });
+        } else {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+        pendingScrollGroupRef.current = '';
+      } else if (attemptsLeft > 0) {
+        setTimeout(() => attemptScroll(attemptsLeft - 1), 100);
+      } else {
+        console.warn('[DCS] gave up scrolling to', target);
+        pendingScrollGroupRef.current = '';
+      }
+    };
+
+    attemptScroll(5);
+  }, [selectedGroupCode, tree]);
+
+  const pendingScrollCategoryRef = useRef<string>('');
 
   // Stage 2: apply category anchor after categories for selected group load
   useEffect(() => {
@@ -291,10 +336,54 @@ export default function DisplayCategorySearch({
     const match = categories.find((c: any) => String(c?.code ?? '') === wantedCategory);
     if (!match) return;
 
+    pendingScrollCategoryRef.current = wantedCategory;
     setSelectedCategoryCode(wantedCategory);
     onSelectCategory?.(match);
     console.log('[DCS] stage2 category anchor applied', { wantedCategory });
   }, [categories, categoryAnchor, onSelectCategory]);
+
+  // Scroll right-pane selected row into view after DataTable renders
+  useEffect(() => {
+    const target = pendingScrollCategoryRef.current;
+    if (!target) return;
+    if (String(selectedCategoryCode) !== target) return;
+
+    const attemptScroll = (attemptsLeft: number) => {
+      // DataTable applies selectedRowKey as a highlighted row - try known selectors
+      const selectors = [
+        `tr[data-row-key="${target}"]`,
+        `tr[data-key="${target}"]`,
+        `tr.pm-row--selected`,
+        `tr.pm-row-selected`,
+        `tr.selected`,
+      ];
+
+      let found = false;
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          console.log('[DCS] scrolled row into view via', sel, target);
+          pendingScrollCategoryRef.current = '';
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        if (attemptsLeft > 0) {
+          setTimeout(() => attemptScroll(attemptsLeft - 1), 100);
+        } else {
+          console.warn('[DCS] gave up scrolling to row', target);
+          pendingScrollCategoryRef.current = '';
+        }
+      }
+    };
+
+    attemptScroll(5);
+  }, [selectedCategoryCode, categories]);
+
+  const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <>
@@ -302,7 +391,10 @@ export default function DisplayCategorySearch({
         sidebar={
           <>
             <div className="pm-sidebar-title">Display Groups</div>
-            <div className="pm-sidebar-scroll">
+            <div
+              className="pm-sidebar-scroll"
+              ref={sidebarScrollRef}
+            >
               {tree.map((group) => {
                 const selected = String(selectedGroupCode) === String(group.groupCode);
                 return (
@@ -313,6 +405,7 @@ export default function DisplayCategorySearch({
                     onContextMenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      handleSelectGroup(group.groupCode);
                       setGroupCtx({ x: e.clientX, y: e.clientY, group });
                     }}
                     className={`pm-list-item ${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
