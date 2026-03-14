@@ -5,6 +5,7 @@ import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DG_GeneralTab from '../tabs/DG_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 
 type Anchor = { code: string; ts: number } | null;
 
@@ -26,27 +27,22 @@ export default function ManageDisplayGroup() {
   const [groupAnchor, setGroupAnchor] = useState<Anchor>(null);
 
   const handleOpenGroup = (row: any) => {
-    setDetail({
-      open: true,
-      code: String(row?.code ?? ''),
-      description: String(row?.description ?? row?.label ?? row?.name ?? ''),
-    });
+    const code = normalizeCode(row, ['code', 'groupCode', 'displayGroupCode']);
+    const description = normalizeDescription(row);
+    if (!code) return;
+    setDetail({ open: true, code, description });
   };
 
   const handleGoToDisplayCategory = (row: any) => {
-    const groupCode = String(row?.code ?? row?.groupCode ?? row?.displayGroupCode ?? '');
-    const description = String(row?.label ?? row?.description ?? '');
-    console.log('[MDG] handleGoToDisplayCategory called', { row, groupCode, description });
-    if (!groupCode) {
-      console.warn('[MDG] no groupCode found on row', row);
-      return;
-    }
+    const groupCode = normalizeCode(row, ['code', 'groupCode', 'displayGroupCode']);
+    const description = normalizeDescription(row);
+    if (!groupCode) return;
+
     navigate('/product-manager/manage-display-category', {
-      state: {
+      state: withNavTs({
         focusGroupCode: groupCode,
         description,
-        navTs: Date.now(),
-      },
+      }),
     });
   };
 
@@ -54,8 +50,16 @@ export default function ManageDisplayGroup() {
     const qs = new URLSearchParams(location.search);
     const state: any = location.state ?? {};
 
-    const focusGroupCode = String(qs.get('focusGroupCode') ?? state.focusGroupCode ?? '');
-    const openGroupCode = String(qs.get('openGroupCode') ?? state.openGroupCode ?? '');
+    const focusGroupCode = normalizeCode(
+      { focusGroupCode: qs.get('focusGroupCode'), stateFocusGroupCode: state.focusGroupCode },
+      ['focusGroupCode', 'stateFocusGroupCode']
+    );
+
+    const openGroupCode = normalizeCode(
+      { openGroupCode: qs.get('openGroupCode'), stateOpenGroupCode: state.openGroupCode },
+      ['openGroupCode', 'stateOpenGroupCode']
+    );
+
     const description = String(state.description ?? '');
     const navTs = Number(qs.get('navTs') ?? state.navTs ?? 0) || Date.now();
 

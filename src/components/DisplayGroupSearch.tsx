@@ -49,7 +49,7 @@ export default function DisplayGroupSearch({
   const [selectedGroupCode, setSelectedGroupCode] = useState<string | null>(null);
   const appliedAnchorTsRef = useRef<number>(0);
   const [groupCtx, setGroupCtx] = useState<{ x: number; y: number; row: any } | null>(null);
-  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  // const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   const fetchDisplayGroups = useCallback(async (signal) => {
     const res = await fetch('/api/display-groups', { signal });

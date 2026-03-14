@@ -6,6 +6,7 @@ import { ModalSessionProvider } from '../context/ModalSessionContext';
 import DC_GeneralTab from '../tabs/DC_GeneralTab';
 import DG_GeneralTab from '../tabs/DG_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 
 type Anchor = { code: string; ts: number } | null;
 type DG_DetailState = { open: boolean; code: string; description: string };
@@ -99,42 +100,37 @@ export default function ManageDisplayCategory() {
   };
 
   const handleModifyCategory = (row: any) => {
-    const code = String(row?.code ?? '');
+    const code = normalizeCode(row, ['code', 'categoryCode', 'displayCategoryCode']);
+    const description = normalizeDescription(row);
     if (!code) return;
-    setDetail({
-      open: true,
-      code,
-      description: String(row?.label ?? row?.description ?? row?.name ?? ''),
-    });
+    setDetail({ open: true, code, description });
   };
 
   const handleGoToProductsForSale = (row: any) => {
-    const code = String(row?.code ?? '');
+    const code = normalizeCode(row, ['code', 'categoryCode', 'displayCategoryCode']);
     if (!code) return;
-    navigate(
-      `/product-manager/manage-products-for-sale?focusCategoryCode=${encodeURIComponent(code)}&navTs=${Date.now()}`
-    );
+    const { navTs } = withNavTs({});
+    navigate(`/product-manager/manage-products-for-sale?focusCategoryCode=${encodeURIComponent(code)}&navTs=${navTs}`);
   };
 
   const handleModifyGroup = (row: any) => {
-    const code = String(row?.groupCode ?? row?.code ?? row?.displayGroupCode ?? '');
-    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
+    const code = normalizeCode(row, ['groupCode', 'code', 'displayGroupCode']);
+    const description = normalizeDescription(row);
     if (!code) return;
     setDgDetail({ open: true, code, description });
   };
 
   const handleGoToDisplayGroup = (row: any) => {
-    const code = String(row?.groupCode ?? row?.code ?? row?.displayGroupCode ?? '');
-    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
+    const code = normalizeCode(row, ['groupCode', 'code', 'displayGroupCode']);
+    const description = normalizeDescription(row);
     if (!code) return;
 
     navigate('/product-manager/manage-display-group', {
-      state: {
+      state: withNavTs({
         focusGroupCode: code,
         openGroupCode: code,
         description,
-        navTs: Date.now(),
-      },
+      }),
     });
   };
 

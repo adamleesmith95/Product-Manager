@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import DC_GeneralTab from '../tabs/DC_GeneralTab';
+import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 
 type ProductRow = {
   code: string;
@@ -121,15 +122,18 @@ export default function ManageProductsForSalePage() {
   };
 
   const handleGoToDisplayCategory = (row: any) => {
-    const code = String(row?.code ?? row?.categoryCode ?? row?.displayCategoryCode ?? '');
-    const description = String(row?.label ?? row?.description ?? row?.name ?? '');
-    if (!code) return;
+    const openCategoryCode = normalizeCode(row, ['displayCategoryCode', 'categoryCode', 'code', 'display_category_code']);
+    const focusGroupCode = normalizeCode(row, ['displayGroupCode', 'groupCode', 'display_group_code']);
+    const description = normalizeDescription(row);
+
+    if (!openCategoryCode) return;
+
     navigate('/product-manager/manage-display-category', {
-      state: {
-        openCategoryCode: code,
-        focusGroupCode: String(row?.displayGroupCode ?? row?.groupCode ?? row?.display_group_code ?? ''),
+      state: withNavTs({
+        openCategoryCode,
+        focusGroupCode,
         description,
-      },
+      }),
     });
   };
 
