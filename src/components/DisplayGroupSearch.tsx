@@ -111,40 +111,44 @@ export default function DisplayGroupSearch({
     const code = String(groupAnchor?.code ?? '');
     const ts = Number(groupAnchor?.ts ?? 0);
     if (!code || !ts) return;
-    if (appliedAnchorTsRef.current === ts) return;
 
+    // Keep selected state in sync immediately
     setSelectedGroupCode(code);
 
+    // Wait until rows are actually present before considering anchor "applied"
     const match = tableRows.find((r: any) => String(r?.code ?? r?.groupCode ?? '') === code);
-    if (match) onSelectGroup?.(match);
+    if (!match) return;
 
-    appliedAnchorTsRef.current = ts;
+    // If already applied for this timestamp, stop
+    if (appliedAnchorTsRef.current === ts) return;
 
-    setTimeout(() => {
-      // debug: log all tr attributes to find correct selector
-      const allRows = document.querySelectorAll('tr');
-      if (allRows.length > 0) {
-        const firstRow = allRows[1]; // skip header
-        console.log('[DGS] row attributes:', Array.from(firstRow.attributes).map(a => `${a.name}="${a.value}"`));
-      }
+    onSelectGroup?.(match);
 
+    const attemptScroll = (attemptsLeft: number) => {
       const selectors = [
         `[data-row-key="${code}"]`,
         `[data-key="${code}"]`,
         `[data-id="${code}"]`,
+        `tr.pm-row--selected`,
         `tr.pm-row-selected`,
         `tr.selected`,
-        `tr.pm-row--selected`,
       ];
+
       for (const sel of selectors) {
         const el = document.querySelector(sel);
         if (el) {
           el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          console.log('[DGS] scrolled via selector', sel);
-          break;
+          appliedAnchorTsRef.current = ts; // mark applied only after successful scroll
+          return;
         }
       }
-    }, 150);
+
+      if (attemptsLeft > 0) {
+        setTimeout(() => attemptScroll(attemptsLeft - 1), 100);
+      }
+    };
+
+    attemptScroll(6);
   }, [groupAnchor, tableRows, onSelectGroup]);
 
   useEffect(() => {
