@@ -1,7 +1,7 @@
-
 // src/components/SidebarNav.tsx
-import { NavLink } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { NavLink ,useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 
 type NavGroup = {
   key: string;
@@ -51,8 +51,16 @@ const groups: NavGroup[] = [
 
 const STORAGE_KEY = 'pm.navExpandedSections';
 
+const normalizePath = (p: string) => (p || '/').replace(/\/+$/, '') || '/';
+const routeMatches = (itemTo: string, pathname: string) => {
+  const a = normalizePath(itemTo);
+  const b = normalizePath(pathname);
+  return b === a || b.startsWith(`${a}/`);
+};
+
 export default function SidebarNav() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const location = useLocation();
 
   useEffect(() => {
     try {
@@ -71,42 +79,68 @@ export default function SidebarNav() {
     } catch {}
   }, [expanded]);
 
+  useEffect(() => {
+    // Auto-expand the group containing the active route
+    const pathname = location.pathname;
+    const newExpanded = { ...expanded };
+    let changed = false;
+
+    groups.forEach((group) => {
+      const hasActiveChild = (group.children ?? []).some(
+        (item) => routeMatches(item.path, pathname)
+      );
+      if (hasActiveChild && !newExpanded[group.key]) {
+        newExpanded[group.key] = true;
+        changed = true;
+      }
+    });
+
+    if (changed) setExpanded(newExpanded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   const toggle = (key: string) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const items = useMemo(() => groups, []);
+  const isGroupOpen = (key: string) => !!expanded[key];
+
+  const toggleGroup = (key: string) => {
+    // keep active parent open
+    if (isGroupOpen(key)) return;
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <nav className="py-2">
-      {items.map((group) => (
+      {groups.map((group) => (
         <div key={group.key} className="border-b">
           <button
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-neutral-50"
-            onClick={() => toggle(group.key)}
-            aria-expanded={!!expanded[group.key]}
+            onClick={() => toggleGroup(group.key)}
+            aria-expanded={isGroupOpen(group.key)}
           >
             <span className="font-medium text-blue-900">{group.label}</span>
-            <svg className={`w-4 h-4 transition-transform ${expanded[group.key] ? 'rotate-180' : 'rotate-0'}`} viewBox="0 0 20 20" fill="currentColor">
+            <svg className={`w-4 h-4 transition-transform ${isGroupOpen(group.key) ? 'rotate-180' : 'rotate-0'}`} viewBox="0 0 20 20" fill="currentColor">
               <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
             </svg>
           </button>
-          {expanded[group.key] && (
-            <ul className="pb-2">
-              {(group.children ?? []).map((child) => (
-                <li key={child.path}>
-                  <NavLink
-                    to={child.path}
-                    className={({ isActive }) =>
-                      `block pl-6 pr-3 py-2 text-sm hover:bg-neutral-50 ${
-                        isActive ? 'text-blue-700 font-medium' : 'text-neutral-700'
-                      }`
-                    }
-                  >
-                    {child.label}
-                  </NavLink>
-                </li>
+
+          {isGroupOpen(group.key) && (
+            <div>
+              {(group.children ?? []).map((item: any) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `block pl-6 pr-3 py-2 text-sm hover:bg-neutral-50 ${
+                      isActive ? 'text-blue-700 font-medium' : 'text-neutral-700'
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       ))}
