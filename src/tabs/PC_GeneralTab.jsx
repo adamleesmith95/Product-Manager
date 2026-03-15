@@ -41,8 +41,17 @@ export default function PC_GeneralTab({ productCode, isActive, form, update }) {
         checked={form.active ?? false}
         onChange={v => update('active', v)}
       />
-      <ReadonlyField label="Display" value={row.display} />
-      <ReadonlyField label="Change Revenue Location" value={row.changeRevenueLocation} />
+      <CheckRow
+        label="Display"
+        checked={form.display ?? false}
+        onChange={v => update('display', v)}
+      />
+      <CheckRow
+        label="Change Revenue Location"
+        checked={form.changeRevenueLocation ?? false}
+        onChange={v => update('changeRevenueLocation', v)}
+      />
+      
       <ReadonlyField label="Payment Date" value={row.paymentDate} />
       <ReadonlyField label="Reference" value={row.reference} />
       <ReadonlyField label="Deferral Pattern" value={row.deferralPattern} />
