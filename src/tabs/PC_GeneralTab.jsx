@@ -1,5 +1,6 @@
 import React from 'react';
 import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+import CheckRow from '../components/CheckRow';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -8,7 +9,7 @@ const EMPTY = {
   paymentDate: '', reference: '', deferralPattern: '', operatorId: '', updateDate: '',
 };
 
-export default function PC_GeneralTab({ productCode, isActive }) {
+export default function PC_GeneralTab({ productCode, isActive, form, update }) {
   const { data, loading, error } = useModalCachedFetch(
     `pc-general-${productCode}`,
     async () => {
@@ -35,7 +36,11 @@ export default function PC_GeneralTab({ productCode, isActive }) {
       <ReadonlyField label="Product Profile Type" value={row.productProfileType} />
       <ReadonlyField label="Units" value={row.units} />
       <ReadonlyField label="Sales Units" value={row.salesUnits} />
-      <ReadonlyField label="Active" value={row.active} />
+      <CheckRow
+        label="Active"
+        checked={form.active ?? false}
+        onChange={v => update('active', v)}
+      />
       <ReadonlyField label="Display" value={row.display} />
       <ReadonlyField label="Change Revenue Location" value={row.changeRevenueLocation} />
       <ReadonlyField label="Payment Date" value={row.paymentDate} />

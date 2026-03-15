@@ -1,5 +1,6 @@
 import React from 'react';
 import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+import CheckRow from '../components/CheckRow';
 
 const EMPTY = {
   crmCustomerType: '', crmProductCategory: '', crmProduct: '',
@@ -18,7 +19,7 @@ function ReadonlyField({ label, value }) {
   );
 }
 
-export default function PC_AdditionalTab({ productCode, isActive }) {
+export default function PC_AdditionalTab({ productCode, isActive, form, update }) {
   const { data, loading, error } = useModalCachedFetch(
     `pc-additional-${productCode}`,
     async () => {
@@ -53,6 +54,7 @@ export default function PC_AdditionalTab({ productCode, isActive }) {
       <ReadonlyField label="Print Academy Labels" value={row.printAcademyLabels} />
       <ReadonlyField label="Off-line Free Sell" value={row.offlineFreeSell} />
       <ReadonlyField label="Revenue Location Override Category" value={row.revenueLocationOverrideCategory} />
+      <CheckRow data={row} />
     </div>
   );
 }

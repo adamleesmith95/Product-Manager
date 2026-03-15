@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import ProductComponentSearch from '../components/ProductComponentSearch';
 import ProductComponentInlinePanel from '../components/ProductComponentInlinePanel';
@@ -9,22 +9,87 @@ import PC_GeneralTab from '../tabs/PC_GeneralTab';
 import PC_AdditionalTab from '../tabs/PC_AdditionalTab';
 import ModalTabButton from '../components/shared/ModalTabButton';
 
+
+
 export default function ManageProductComponent() {
   const USE_INLINE_PREVIEW = true;
   const [selectedProductCode, setSelectedProductCode] = useState<number | null>(null);
 
-  type ProductComponentDetailState = {
-    open: boolean;
-    productCode: number | null;
-    productDescription: string;
-  };
-
-  const [detail, setDetail] = useState<ProductComponentDetailState>({
+  // State for modal detail
+  const [detail, setDetail] = useState({
     open: false,
     productCode: null,
     productDescription: '',
   });
-  const [activeTab, setActiveTab] = useState<'general' | 'additional'>('general');
+  const [activeTab, setActiveTab] = useState('general');
+
+  // Form state and update function
+  const EMPTY = {
+  //General tab fields
+  productCode: null,
+  description: '',
+  productCategory: '',
+  displayOrder: null,
+  productProfileType: '',
+  units: '',
+  salesUnits: '',
+  paymentDate: null,
+  reference: '',
+  deferralPattern: '',
+  operatorId: '',
+  updateDate: null,
+
+  //additional tab fields
+  crmEvent: false,
+  onlineHotlist: false,
+  reportRevenue: false,
+  printAcademyLabels: false,
+  offlineFreeSell: false,
+
+//    generalFlags: {
+      //General tab flags
+  //    active: false,
+    //  display: false,
+      //changeRevenueLocation: false,
+
+      //Additional tab flags
+    //crmEvent: false,
+//    onlineHotlist: false,
+  //  reportRevenue: false,
+//    printAcademyLabels: false,
+  //  offlineFreeSell: false
+
+    // Add more flags as needed
+    //},
+  // ...other fields
+
+  };
+  const [form, setForm] = useState(EMPTY);
+
+  function update(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
+
+  useEffect(() => {
+    if (!detail.productCode) return;
+    fetch(`/api/product-components/${detail.productCode}/general`)
+      .then(res => res.json())
+      .then(json => {
+        const row = json?.row ?? {};
+        setForm({
+          ...EMPTY,
+          ...row,
+          active: row.active === 'Y',
+          display: row.display === 'Y',
+          changeRevenueLocation: row.changeRevenueLocation === 'Y',
+          crmEvent: row.crmEvent === 'Y',
+          onlineHotlist: row.onlineHotlist === 'Y',
+          reportRevenue: row.reportRevenue === 'Y',
+          printAcademyLabels: row.printAcademyLabels === 'Y',
+          offlineFreeSell: row.offlineFreeSell === 'Y',
+        });
+      });
+  }, [detail.productCode]);
 
   const handleOpenProduct = (row: any) => {
     const code = Number(row?.code ?? row?.productCode);
@@ -89,8 +154,22 @@ export default function ManageProductComponent() {
             </div>
 
             <div className="pm-tab-body pm-form-shell">
-              {activeTab === 'general' && <PC_GeneralTab productCode={detail.productCode} isActive />}
-              {activeTab === 'additional' && <PC_AdditionalTab productCode={detail.productCode} isActive />}
+             {activeTab === 'general' && (
+                <PC_GeneralTab
+                  productCode={detail.productCode}
+                  isActive={activeTab === 'general'}
+                  form={form}
+                  update={update}
+                />
+              )}
+              {activeTab === 'additional' && (
+                <PC_AdditionalTab
+                  productCode={detail.productCode}
+                  isActive={activeTab === 'additional'}
+                  form={form}
+                  update={update}
+                />
+              )}
             </div>
           </div>
         </ModalSessionProvider>
