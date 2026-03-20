@@ -95,6 +95,9 @@ poolConnect
     process.exit(1);
   });
 
+  const lookupProductsRoutes = require('./routes/lookupProducts.cjs');
+  app.use('/api', lookupProductsRoutes(pool, poolConnect));
+
 /** Generic helper to add simple lookup endpoints */
 function addLookupRoute(routePath, sqlText) {
   app.get(routePath, async (_req, res) => {
@@ -187,6 +190,8 @@ addLookupRoute(
   ORDER BY description;
 `
 );
+
+
 
 
 

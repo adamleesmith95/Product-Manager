@@ -1,6 +1,10 @@
 import React from 'react';
 import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+import LabeledInput from '../components/LabeledInput';
+import LabeledSelect from '../components/LabeledSelect';
+import LabeledDateInput from '../components/LabeledDateInput';
 import CheckRow from '../components/CheckRow';
+import useLookup from '../hooks/useLookup';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -10,6 +14,27 @@ const EMPTY = {
 };
 
 export default function PC_GeneralTab({ productCode, isActive, form, update }) {
+
+const { options: productCategories } = useLookup('/api/lookups/product-categories');
+const { options: productProfileTypes } = useLookup('/api/lookups/product-profile-types');
+const { options: deferralPatterns } = useLookup('/api/lookups/deferral-patterns');
+
+function bindSelect(baseKey, options) {
+  const codeKey = `${baseKey}Code`;
+  const labelKey = baseKey;
+  return {
+    value: String(form[codeKey] ?? ''),
+    onChange: (e) => {
+      const v = String(e?.target?.value ?? '');
+      update(codeKey, v);
+      const o = options.find((x) => String(x.value) === v);
+      update(labelKey, o?.label ?? '');
+    },
+  };
+}
+
+
+
   const { data, loading, error } = useModalCachedFetch(
     `pc-general-${productCode}`,
     async () => {
@@ -28,35 +53,78 @@ export default function PC_GeneralTab({ productCode, isActive, form, update }) {
   if (error) return <div className="p-3 text-sm text-red-600">{error}</div>;
 
   return (
-    <div className="pc-grid-2">
-      <ReadonlyField label="Product Code" value={row.productCode} />
-      <ReadonlyField label="Description" value={row.description} />
-      <ReadonlyField label="Product Category" value={row.productCategory} />
-      <ReadonlyField label="Display Order" value={row.displayOrder} />
-      <ReadonlyField label="Product Profile Type" value={row.productProfileType} />
-      <ReadonlyField label="Units" value={row.units} />
-      <ReadonlyField label="Sales Units" value={row.salesUnits} />
-      <CheckRow
-        label="Active"
-        checked={form.active ?? false}
-        onChange={v => update('active', v)}
-      />
-      <CheckRow
-        label="Display"
-        checked={form.display ?? false}
-        onChange={v => update('display', v)}
-      />
-      <CheckRow
-        label="Change Revenue Location"
-        checked={form.changeRevenueLocation ?? false}
-        onChange={v => update('changeRevenueLocation', v)}
-      />
-      
-      <ReadonlyField label="Payment Date" value={row.paymentDate} />
-      <ReadonlyField label="Reference" value={row.reference} />
-      <ReadonlyField label="Deferral Pattern" value={row.deferralPattern} />
-      <ReadonlyField label="Operator ID" value={row.operatorId} />
-      <ReadonlyField label="Update Date" value={row.updateDate} />
+    <div className="max-w-screen-xl mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        {/* Left Column */}
+        <div className="space-y-4">
+          <ReadonlyField label="Product Code" value={row.productCode} />
+          <ReadonlyField label="Description" value={row.description} />
+
+          <LabeledSelect
+            label="Product Category"
+            options={productCategories}
+            {...bindSelect('productCategory', productCategories)} />
+
+          <ReadonlyField label="Display Order" value={row.displayOrder} />
+
+          <LabeledSelect
+            label="Product Profile Type"
+            options={productProfileTypes}
+            {...bindSelect('productProfileType', productProfileTypes)} />
+
+          <div className="grid grid-cols-2 gap-4">
+          <ReadonlyField label="Units" value={row.units} />
+          <ReadonlyField label="Sales Units" value={row.salesUnits} />   
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+          <ReadonlyField label="Operator ID" value={row.operatorId} />
+          <ReadonlyField label="Update Date" value={row.updateDate} />
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <CheckRow
+              label="Active"
+              checked={form.active ?? false}
+              onChange={v => update('active', v)}
+            />
+            <CheckRow
+              label="Display"
+              checked={form.display ?? false}
+              onChange={v => update('display', v)}
+            />
+            <CheckRow
+              label="Change Revenue Location"
+              checked={form.changeRevenueLocation ?? false}
+              onChange={v => update('changeRevenueLocation', v)}
+            />
+
+            {/* View PHC Button */}
+            <button
+              className="btn btn-light"
+              type="button"
+              onClick={() => {/* TODO: open PHC modal */}}
+            >
+              View PHC
+            </button>
+          </div>
+
+            
+
+          <ReadonlyField label="Payment Date" value={row.paymentDate} />
+          <ReadonlyField label="Reference" value={row.reference} />
+
+          <LabeledSelect
+            label="Deferral Pattern"
+            options={deferralPatterns}
+            {...bindSelect('deferralPattern', deferralPatterns)} />
+
+        </div>
+
+      </div>
     </div>
   );
 }

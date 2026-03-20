@@ -262,9 +262,11 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
       SELECT
         sp.product_code AS productCode,
         sp.description AS description,
+        spc.product_category_code AS productCategoryCode,
         spc.description AS productCategory,
         sp.display_order AS displayOrder,
         spp.description AS productProfileType,
+        spp.product_profile_type_code AS productProfileTypeCode,
         sp.units AS units,
         sp.sales_units AS salesUnits,
         sp.active_ind AS active,
@@ -273,6 +275,7 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
         CONVERT(VARCHAR, sp.payment_date, 103) AS paymentDate,
         sp.product_reference AS reference,
         sdp.description AS deferralPattern,
+        sdp.deferral_pattern_code AS deferralPatternCode,
         sp.operator_id AS operatorId,
         CONVERT(VARCHAR, sp.update_date, 103) AS updateDate
       FROM s_product sp
