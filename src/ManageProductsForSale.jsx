@@ -12,8 +12,14 @@ import ProductComponentsTab from './tabs/productTables/productsForSale/ProductCo
 import AccountingTab from './tabs/productTables/productsForSale/AccountingTab';
 import ProductPricingTab from './tabs/productTables/productsForSale/ProductPricingTab';
 
-const topTabs = ['General', 'Properties', 'Linked Products', 'Comments'];
-const bottomTabs = ['Sale Locations', 'Product Components', 'Accounting', 'Product Pricing'];
+const topTabs = ['General', 'Locations' , 'Components', 'Accounting' , 'Pricing' , 'Prompts' , 
+  'Properties', 'LinkedPHC', 'Comments' , 'AutoRenew' , 'Grouping' , 'Modules', //'AutoApplied' , 
+  'Attributes'];
+
+
+//const topTabs = ['General', 'Sale Locations' , 'Product Components', 'Accounting' , 'Product Pricing' , 'Prompts' ,  'Properties',
+//  'Linked Products', 'Comments' , 'Auto-Renew' , 'Display Category Grouping' , 'Sales Modules', //'Auto Applied' ,
+//   'Attributes'];
 
 function initFormFromProduct(product) {
   const S = (v) => v ?? '';
@@ -106,8 +112,6 @@ export default function ManageProductsForSale({ product, onClose }) {
   });
 
   const [topTab, setTopTab]       = useState(() => tabForms['topTab']    ?? 'General');
-  const [bottomTab, setBottomTab] = useState(() => tabForms['bottomTab'] ?? 'Sale Locations');
-  const [section, setSection]     = useState(() => tabForms['section']   ?? 'primary');
 
   // Reset form when product changes
   useEffect(() => {
@@ -121,8 +125,7 @@ export default function ManageProductsForSale({ product, onClose }) {
 
   // Persist active tab state
   useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
-  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
-  useEffect(() => setTabForm('section',   section),   [section]);
+
 
     const update = (key, value) => {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -170,68 +173,43 @@ export default function ManageProductsForSale({ product, onClose }) {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden p-4 gap-3">
-      <div role="tablist" className="shrink-0">
-        <div className="pm-tab-row">
-          {topTabs.map((tab) => (
-            <ModalTabButton
-              key={tab}
-              active={topTab === tab && section === 'primary'}
-              onClick={() => { setSection('primary'); setTopTab(tab); }}
-            >
-              {tab}
-            </ModalTabButton>
-          ))}
-        </div>
-        <div className="pm-tab-row pt-1">
-          {bottomTabs.map((tab) => (
-            <ModalTabButton
-              key={tab}
-              active={bottomTab === tab && section === 'module'}
-              onClick={() => { setSection('module'); setBottomTab(tab); }}
-            >
-              {tab}
-            </ModalTabButton>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
-        {section === 'primary' ? (
-          <div className="h-full min-h-0 overflow-auto p-4">
-            {topTab === 'General'         && <GeneralTab form={form} update={update} />}
-            {topTab === 'Properties'      && <PropertiesTab form={form} update={update} />}
-            {topTab === 'Linked Products' && <LinkedProductsTab form={form} update={update} />}
-            {topTab === 'Comments'        && <CommentsTab form={form} update={update} />}
-          </div>
-        ) : (
-          <div className="h-full min-h-0 overflow-hidden">
-            {bottomTab === 'Sale Locations' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <SaleLocationsTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-            {bottomTab === 'Product Components' && (
-              <div className="h-full min-h-0 overflow-hidden p-4">
-                <ProductComponentsTab
-                  productPhc={phc}
-                  onComponentsChanged={() => {}}
-                />
-              </div>
-            )}
-            {bottomTab === 'Accounting' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <AccountingTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-            {bottomTab === 'Product Pricing' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <ProductPricingTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-          </div>
-        )}
+  <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div role="tablist" className="shrink-0">
+      <div className="pm-tab-row">
+        {topTabs.map((tab) => (
+          <ModalTabButton
+            key={tab}
+            active={topTab === tab}
+            onClick={() => setTopTab(tab)}
+          >
+            {tab}
+          </ModalTabButton>
+        ))}
       </div>
     </div>
-  );
+
+    <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
+      <div className="h-full min-h-0 overflow-auto p-4">
+        {topTab === 'General'          && <GeneralTab form={form} update={update} />}
+        {topTab === 'Sale Locations'   && <SaleLocationsTab form={form} update={update} productPhc={phc} />}
+        {topTab === 'Product Components' && (
+          <div className="h-full min-h-0 overflow-hidden">
+            <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
+          </div>
+        )}
+        {topTab === 'Accounting'       && <AccountingTab form={form} update={update} productPhc={phc} />}
+        {topTab === 'Product Pricing'  && <ProductPricingTab form={form} update={update} productPhc={phc} />}
+        {topTab === 'Properties'       && <PropertiesTab form={form} update={update} />}
+        {topTab === 'Linked Products'  && <LinkedProductsTab form={form} update={update} />}
+        {topTab === 'Comments'         && <CommentsTab form={form} update={update} />}
+        {topTab === 'Prompts'          && <div className="p-3 text-sm text-gray-500">Prompts — coming soon.</div>}
+        {topTab === 'Auto-Renew'       && <div className="p-3 text-sm text-gray-500">Auto-Renew — coming soon.</div>}
+        {topTab === 'Display Category Grouping' && <div className="p-3 text-sm text-gray-500">Display Category Grouping — coming soon.</div>}
+        {topTab === 'Sales Modules'    && <div className="p-3 text-sm text-gray-500">Sales Modules — coming soon.</div>}
+        {topTab === 'Auto Applied'     && <div className="p-3 text-sm text-gray-500">Auto Applied — coming soon.</div>}
+        {topTab === 'Attributes'       && <div className="p-3 text-sm text-gray-500">Attributes — coming soon.</div>}
+      </div>
+    </div>
+  </div>
+);
 }

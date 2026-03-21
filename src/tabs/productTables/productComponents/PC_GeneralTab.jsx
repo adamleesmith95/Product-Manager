@@ -53,8 +53,7 @@ function bindSelect(baseKey, options) {
   if (error) return <div className="p-3 text-sm text-red-600">{error}</div>;
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Left Column */}
         <div className="space-y-4">
@@ -125,7 +124,6 @@ function bindSelect(baseKey, options) {
         </div>
 
       </div>
-    </div>
   );
 }
 

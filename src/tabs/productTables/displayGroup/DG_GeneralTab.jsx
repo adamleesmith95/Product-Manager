@@ -1,13 +1,11 @@
 import React from 'react';
-import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
+import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 
 const EMPTY = {
   code: '',
-  label: '',
-  displayGroupCode: '',
-  displayGroup: '',
+  description: '',
   active: '',
-  order: '',
+  displayOrder: '',
   operatorId: '',
   updated: '',
 };
@@ -25,32 +23,30 @@ function ReadonlyField({ label, value }) {
   );
 }
 
-export default function DC_GeneralTab({ categoryCode, isActive }) {
+export default function DG_GeneralTab({ groupCode, isActive }) {
   const { data, loading, error } = useModalCachedFetch(
-    `dc-general-${categoryCode}`,
+    `dg-general-${groupCode}`,
     async () => {
-      const res = await fetch(`/api/display-categories/${categoryCode}`);
+      const res = await fetch(`/api/display-groups/${groupCode}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return { ...EMPTY, ...(json?.row ?? {}) };
     },
-    !!categoryCode && isActive
+    !!groupCode && isActive
   );
 
   const row = data ?? EMPTY;
 
-  if (!categoryCode) return <div className="p-3 text-sm text-gray-500">No display category selected.</div>;
+  if (!groupCode) return <div className="p-3 text-sm text-gray-500">No display group selected.</div>;
   if (loading) return <div className="p-3 text-sm">Loading…</div>;
   if (error) return <div className="p-3 text-sm text-red-600">{String(error)}</div>;
 
   return (
-    <div className="grid grid-cols-2 gap-3 p-4">
-      <ReadonlyField label="Display Category Code" value={row.code} />
-      <ReadonlyField label="Description" value={row.label} />
-      <ReadonlyField label="Display Group Code" value={row.displayGroupCode} />
-      <ReadonlyField label="Display Group" value={row.displayGroup} />
+    <div className="grid grid-cols-2 gap-3">
+      <ReadonlyField label="Display Group Code" value={row.code} />
+      <ReadonlyField label="Description" value={row.description} />
       <ReadonlyField label="Active" value={row.active} />
-      <ReadonlyField label="Display Order" value={row.order} />
+      <ReadonlyField label="Display Order" value={row.displayOrder} />
       <ReadonlyField label="Operator ID" value={row.operatorId} />
       <ReadonlyField label="Updated" value={row.updated} />
     </div>

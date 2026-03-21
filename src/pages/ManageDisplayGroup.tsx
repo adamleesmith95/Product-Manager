@@ -3,7 +3,7 @@ import DisplayGroupSearch from '../components/DisplayGroupSearch';
 import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
-import DG_GeneralTab from '../tabs/DG_GeneralTab';
+import DG_GeneralTab from '../tabs/productTables/displayGroup/DG_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 

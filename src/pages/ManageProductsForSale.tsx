@@ -6,7 +6,7 @@ import ManageProductsForSaleLegacy from '../ManageProductsForSale.jsx';
 import Modal from '../components/Modal';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
 import ModalTabButton from '../components/shared/ModalTabButton';
-import DC_GeneralTab from '../tabs/DC_GeneralTab';
+import DC_GeneralTab from '../tabs/productTables/displayCategory/DC_GeneralTab';
 import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 
 type ProductRow = {
