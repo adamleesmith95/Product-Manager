@@ -1,6 +1,6 @@
 import React from 'react';
-import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
-import CheckRow from '../components/CheckRow';
+import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
+import CheckRow from '../../../components/CheckRow';
 
 const EMPTY = {
   crmCustomerType: '', crmProductCategory: '', crmProduct: '',

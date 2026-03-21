@@ -3,14 +3,14 @@ import { useModalSession } from './context/ModalSessionContext';
 import ModalTabButton from './components/shared/ModalTabButton';
 
 // Modularized tab views
-import GeneralTab from './tabs/GeneralTab';
-import PropertiesTab from './tabs/PropertiesTab.jsx';
-import LinkedProductsTab from './tabs/LinkedProductsTab';
-import CommentsTab from './tabs/CommentsTab';
-import SaleLocationsTab from './tabs/SaleLocationsTab';
-import ProductComponentsTab from './tabs/ProductComponentsTab';
-import AccountingTab from './tabs/AccountingTab';
-import ProductPricingTab from './tabs/ProductPricingTab';
+import GeneralTab from './tabs/productTables/productsForSale/GeneralTab';
+import PropertiesTab from './tabs/productTables/productsForSale/PropertiesTab.jsx';
+import LinkedProductsTab from './tabs/productTables/productsForSale/LinkedProductsTab';
+import CommentsTab from './tabs/productTables/productsForSale/CommentsTab';
+import SaleLocationsTab from './tabs/productTables/productsForSale/SaleLocationsTab';
+import ProductComponentsTab from './tabs/productTables/productsForSale/ProductComponentsTab';
+import AccountingTab from './tabs/productTables/productsForSale/AccountingTab';
+import ProductPricingTab from './tabs/productTables/productsForSale/ProductPricingTab';
 
 const topTabs = ['General', 'Properties', 'Linked Products', 'Comments'];
 const bottomTabs = ['Sale Locations', 'Product Components', 'Accounting', 'Product Pricing'];
@@ -124,13 +124,13 @@ export default function ManageProductsForSale({ product, onClose }) {
   useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
   useEffect(() => setTabForm('section',   section),   [section]);
 
-  const update = (key, value) => {
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      setTabForm('general', next);
-      return next;
-    });
-  };
+    const update = (key, value) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    useEffect(() => {
+      setTabForm('general', form);
+    }, [form]);
 
   // Single declaration of hydrateForm
   function hydrateForm(row) {

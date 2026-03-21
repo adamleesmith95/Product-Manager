@@ -1,10 +1,10 @@
 import React from 'react';
-import Section from '../components/Section';
-import Field from '../components/Field';
-import TextInput from '../components/TextInput';
-import NumberInput from '../components/NumberInput';
-import Checkbox from '../components/Checkbox';
-import TextArea from '../components/TextArea';
+import Section from '../../../components/Section';
+import Field from '../../../components/Field';
+import TextInput from '../../../components/TextInput';
+import NumberInput from '../../../components/NumberInput';
+import Checkbox from '../../../components/Checkbox';
+import TextArea from '../../../components/TextArea';
 
 export default function PropertiesTab({ form, update }) {
   return (

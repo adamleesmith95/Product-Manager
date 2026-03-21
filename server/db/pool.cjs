@@ -1,4 +1,3 @@
-
 // server/db/pool.cjs
 const fs = require('fs');
 const path = require('path');
@@ -8,7 +7,6 @@ function loadConnectionString() {
   if (process.env.CONNECTION_STRING && process.env.CONNECTION_STRING.trim()) {
     return process.env.CONNECTION_STRING.trim();
   }
-
   const appSettingsPath = path.join(process.cwd(), 'appsettings.json');
   if (fs.existsSync(appSettingsPath)) {
     try {
@@ -17,9 +15,9 @@ function loadConnectionString() {
       const cs = json?.ConnectionStrings?.AppDb;
       if (typeof cs === 'string' && cs.trim()) return cs.trim();
     } catch {
+      // unparseable appsettings.json — fall through
     }
   }
-
   return null;
 }
 
@@ -47,4 +45,3 @@ function getPool() {
 }
 
 module.exports = { sql, getPool };
-``

@@ -5,8 +5,8 @@ import ProductComponentInlinePanel from '../components/ProductComponentInlinePan
 import '../styles/pc-inline-preview.css';
 
 import Modal from '../components/Modal';
-import PC_GeneralTab from '../tabs/PC_GeneralTab';
-import PC_AdditionalTab from '../tabs/PC_AdditionalTab';
+import PC_GeneralTab from '../tabs/productTables/productComponents/PC_GeneralTab';
+import PC_AdditionalTab from '../tabs/productTables/productComponents/PC_AdditionalTab';
 import ModalTabButton from '../components/shared/ModalTabButton';
 
 

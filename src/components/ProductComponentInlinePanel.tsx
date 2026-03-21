@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import PC_GeneralTab from '../tabs/PC_GeneralTab';
-import PC_AdditionalTab from '../tabs/PC_AdditionalTab';
+import PC_GeneralTab from '../tabs/productTables/productComponents/PC_GeneralTab';
+import PC_AdditionalTab from '../tabs/productTables/productComponents/PC_AdditionalTab';
 import ModalTabButton from './shared/ModalTabButton';
 
 type TabKey = 'general' | 'additional';

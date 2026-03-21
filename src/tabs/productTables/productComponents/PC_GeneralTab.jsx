@@ -1,10 +1,10 @@
 import React from 'react';
-import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
-import LabeledInput from '../components/LabeledInput';
-import LabeledSelect from '../components/LabeledSelect';
-import LabeledDateInput from '../components/LabeledDateInput';
-import CheckRow from '../components/CheckRow';
-import useLookup from '../hooks/useLookup';
+import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
+import LabeledInput from '../../../components/LabeledInput';
+import LabeledSelect from '../../../components/LabeledSelect';
+import LabeledDateInput from '../../../components/LabeledDateInput';
+import CheckRow from '../../../components/CheckRow';
+import useLookup from '../../../hooks/useLookup';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',

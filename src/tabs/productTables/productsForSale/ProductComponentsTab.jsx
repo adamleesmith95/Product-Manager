@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import DualPane from '../components/shared/DualPane';
-import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
-import { useModalSession } from '../context/ModalSessionContext';
+import DualPane from '../../../components/shared/DualPane';
+import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
+import { useModalSession } from '../../../context/ModalSessionContext';
 
 // -------------------------------------------------------------
 // ProductComponentsTab

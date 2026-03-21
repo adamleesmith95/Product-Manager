@@ -1,8 +1,8 @@
-import PC_GeneralTab from './PC_GeneralTab';
-import PC_AdditionalTab from './PC_AdditionalTab';
-import PC_TaxTab from './PC_TaxTab';
-import PC_ProfileTab from './PC_ProfileTab';
-import PC_OutputTab from './PC_OutputTab';
+import PC_GeneralTab from './productTables/productComponents/PC_GeneralTab';
+import PC_AdditionalTab from './productTables/productComponents/PC_AdditionalTab';
+import PC_TaxTab from './productTables/productComponents/PC_TaxTab';
+import PC_ProfileTab from './productTables/productComponents/PC_ProfileTab';
+import PC_OutputTab from './productTables/productComponents/PC_OutputTab';
 
 export const PC_TABS = [
   { key: 'general', label: 'General', Component: PC_GeneralTab },

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPool } = require('../db/pool.cjs');
+const { getPool } = require('../../db/pool.cjs');
 
 /** GET /api/display-categories/tree
  * Returns all Display Categories grouped by Display Group

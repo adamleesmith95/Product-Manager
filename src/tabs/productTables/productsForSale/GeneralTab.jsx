@@ -1,9 +1,9 @@
 import React from 'react';
-import LabeledInput from '../components/LabeledInput';
-import LabeledSelect from '../components/LabeledSelect';
-import LabeledDateInput from '../components/LabeledDateInput';
-import CheckRow from '../components/CheckRow';
-import useLookup from '../hooks/useLookup';
+import LabeledInput from '../../../components/LabeledInput';
+import LabeledSelect from '../../../components/LabeledSelect';
+import LabeledDateInput from '../../../components/LabeledDateInput';
+import CheckRow from '../../../components/CheckRow';
+import useLookup from '../../../hooks/useLookup';
 
 
 
