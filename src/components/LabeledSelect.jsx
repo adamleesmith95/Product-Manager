@@ -9,7 +9,7 @@ export default function LabeledSelect({ label, options = [], value, onChange, cl
         onChange={onChange}
         className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
       >
-        <option value="">-- Select --</option>
+        <option value="">&lt;None&gt;</option>
         {options.map((opt, i) => (
           <option key={`${opt.value ?? ''}-${i}`} value={opt.value ?? ''}>
             {opt.label}

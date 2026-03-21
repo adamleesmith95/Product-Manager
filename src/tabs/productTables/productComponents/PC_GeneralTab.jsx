@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledInput from '../../../components/LabeledInput';
 import LabeledSelect from '../../../components/LabeledSelect';
@@ -45,6 +45,18 @@ function bindSelect(baseKey, options) {
     },
     !!productCode && isActive
   );
+
+
+useEffect(() => {
+  if (!data) return;
+  update('productCategoryCode', String(data.productCategoryCode ?? ''));
+  update('productProfileTypeCode', String(data.productProfileTypeCode ?? ''));
+  update('deferralPatternCode', String(data.deferralPatternCode ?? ''));
+  update('active', data.active === 'Y');
+  update('display', data.display === 'Y');
+  update('changeRevenueLocation', data.changeRevenueLocation === 'Y');
+}, [data]);
+
 
   const row = data ?? EMPTY;
 

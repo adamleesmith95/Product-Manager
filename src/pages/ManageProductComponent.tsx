@@ -24,46 +24,42 @@ export default function ManageProductComponent() {
   const [activeTab, setActiveTab] = useState('general');
 
   // Form state and update function
-  const EMPTY = {
-  //General tab fields
-  productCode: null,
-  description: '',
-  productCategory: '',
-  displayOrder: null,
-  productProfileType: '',
-  units: '',
-  salesUnits: '',
-  paymentDate: null,
-  reference: '',
-  deferralPattern: '',
-  operatorId: '',
-  updateDate: null,
+    const EMPTY = {
+    // General tab fields
+    productCode: null,
+    description: '',
+    productCategoryCode: '', productCategory: '',
+    displayOrder: null,
+    productProfileTypeCode: '', productProfileType: '',
+    units: '',
+    salesUnits: '',
+    paymentDate: null,
+    reference: '',
+    deferralPatternCode: '', deferralPattern: '',
+    operatorId: '',
+    updateDate: null,
+    active: false,
+    display: false,
+    changeRevenueLocation: false,
 
-  //additional tab fields
-  crmEvent: false,
-  onlineHotlist: false,
-  reportRevenue: false,
-  printAcademyLabels: false,
-  offlineFreeSell: false,
-
-//    generalFlags: {
-      //General tab flags
-  //    active: false,
-    //  display: false,
-      //changeRevenueLocation: false,
-
-      //Additional tab flags
-    //crmEvent: false,
-//    onlineHotlist: false,
-  //  reportRevenue: false,
-//    printAcademyLabels: false,
-  //  offlineFreeSell: false
-
-    // Add more flags as needed
-    //},
-  // ...other fields
-
+    // Additional tab fields
+    crmCustomerTypeCode: '', crmCustomerType: '',
+    crmProductCategoryCode: '', crmProductCategory: '',
+    crmProductCode: '', crmProduct: '',
+    inventoryPoolCode: '', inventoryPool: '',
+    revenueStatisticCode: '', revenueStatistic: '',
+    rosterCode: '', roster: '',
+    salesStatisticCode: '', salesStatistic: '',
+    deferralCalendarCode: '', deferralCalendar: '',
+    customerPropertySetCode: '', customerPropertySet: '',
+    revenueLocationOverrideCategoryCode: '', revenueLocationOverrideCategory: '',
+    crmEvent: false,
+    onlineHotlist: false,
+    reportRevenue: false,
+    printAcademyLabels: false,
+    offlineFreeSell: false,
   };
+
   const [form, setForm] = useState(EMPTY);
 
   function update(key, value) {

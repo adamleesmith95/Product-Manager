@@ -77,7 +77,7 @@ addLookupRoute(
    ORDER BY description;`
 );
 
-/** Manage Product Components **/
+/** Manage Product Components — General Tab **/
 addLookupRoute(
   '/lookups/product-categories',
   `SELECT
@@ -107,6 +107,78 @@ addLookupRoute(
    FROM s_deferral_pattern
    WHERE active_ind = 'Y'
    ORDER BY display_order, description;`
+);
+
+/** Manage Product Components — Additional Tab **/
+addLookupRoute(
+  '/lookups/crm-customer-types',
+  `SELECT CRMCustomerTypeCode AS code, description AS label
+   FROM CRMCustomerType
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/crm-product-categories',
+  `SELECT CRMProductCategoryCode AS code, description AS label
+   FROM CRMProductCategory
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/crm-products',
+  `SELECT CRMProductCode AS code, description AS label
+   FROM CRMProduct
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/inventory-pools',
+  `SELECT InventoryPoolCode AS code, Description AS label
+   FROM InventoryPool
+   ORDER BY Description;`
+);
+
+addLookupRoute(
+  '/lookups/revenue-statistics',
+  `SELECT statistic_code AS code, description AS label
+   FROM s_statistic
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/rosters',
+  `SELECT RosterCode AS code, Description AS label
+   FROM Roster
+   ORDER BY Description;`
+);
+
+addLookupRoute(
+  '/lookups/sales-statistics',
+  `SELECT statistic_code AS code, description AS label
+   FROM s_statistic
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/deferral-calendars',
+  `SELECT deferralcalendarcode AS code, description AS label
+   FROM DeferralCalendar
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/customer-property-sets',
+  `SELECT CustomerPropertySetCode AS code, Description AS label
+   FROM CustomerPropertySet
+   ORDER BY Description;`
+);
+
+addLookupRoute(
+  '/lookups/revenue-location-override-categories',
+  `SELECT display_category_code AS code, description AS label
+   FROM s_display_category
+   WHERE active_ind = 'Y'
+   ORDER BY description;`
 );
 
 module.exports = router;
