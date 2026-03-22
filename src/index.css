@@ -2,7 +2,7 @@
 
 /* KEEP ONE modal sizing source-of-truth (outside @layer) */
 :root {
-  --pm-top-ui: 280px;
+  --pm-top-ui: 220px;
   --pm-vh: calc(100vh - var(--pm-top-ui));
 
   --pm-modal-entity-w: 1240px;

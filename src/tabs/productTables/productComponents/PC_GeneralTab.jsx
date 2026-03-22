@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledInput from '../../../components/LabeledInput';
 import LabeledSelect from '../../../components/LabeledSelect';
@@ -46,18 +46,6 @@ function bindSelect(baseKey, options) {
     !!productCode && isActive
   );
 
-
-useEffect(() => {
-  if (!data) return;
-  update('productCategoryCode', String(data.productCategoryCode ?? ''));
-  update('productProfileTypeCode', String(data.productProfileTypeCode ?? ''));
-  update('deferralPatternCode', String(data.deferralPatternCode ?? ''));
-  update('active', data.active === 'Y');
-  update('display', data.display === 'Y');
-  update('changeRevenueLocation', data.changeRevenueLocation === 'Y');
-}, [data]);
-
-
   const row = data ?? EMPTY;
 
   if (!productCode) return <div className="p-3 text-sm text-gray-500">No product selected.</div>;
@@ -68,7 +56,7 @@ useEffect(() => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Left Column */}
-        <div className="space-y-4">
+        <div className="space-y-4 pc-label-col-general-left">
           <ReadonlyField label="Product Code" value={row.productCode} />
           <ReadonlyField label="Description" value={row.description} />
 
@@ -95,7 +83,7 @@ useEffect(() => {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-4">
+        <div className="space-y-4 pc-label-col-general-right">
           <div className="grid grid-cols-3 gap-4">
             <CheckRow
               label="Active"
@@ -112,8 +100,9 @@ useEffect(() => {
               checked={form.changeRevenueLocation ?? false}
               onChange={v => update('changeRevenueLocation', v)}
             />
+          </div>
 
-            {/* View PHC Button */}
+          <div className="flex justify-center">
             <button
               className="btn btn-light"
               type="button"

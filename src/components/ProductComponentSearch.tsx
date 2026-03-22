@@ -20,25 +20,19 @@ const COMPONENT_COLUMNS = [
   { key: 'product_profile_type', label: 'Product Profile Type', sortable: true },
   { key: 'deferral_pattern_code', label: 'Deferral Pattern Code', sortable: true },
   { key: 'deferral_pattern', label: 'Deferral Pattern', sortable: true },
-
   { key: 'units', label: 'Units', sortable: true },
   { key: 'revenue_report_ind', label: 'Report Revenue', sortable: true },
   { key: 'change_revenue_location_ind', label: 'Change Revenue Location', sortable: true },
   { key: 'sale_units', label: 'Sale Units', sortable: true },
- 
-  
   { key: 'inventory_pool_code', label: 'Inventory Pool Code', sortable: true },
   { key: 'inventory_pool', label: 'Inventory Pool', sortable: true },
   { key: 'offline_freesell_ind', label: 'Offline Freesell', sortable: true },
   { key: 'sales_statistic_code', label: 'Sales Statistic Code', sortable: true },
   { key: 'sales_statistic', label: 'Sales Statistic', sortable: true },
-
   { key: 'roster_code', label: 'Roster Code', sortable: true },
   { key: 'roster', label: 'Roster', sortable: true },
   { key: 'lift_product_type_code', label: 'Lift Product Type Code', sortable: true },
   { key: 'lift_product_type', label: 'Lift Product Type', sortable: true },
-  // Add these to COMPONENT_COLUMNS array:
-
   { key: 'scan_process_order_code', label: 'Scan Process Order Code', sortable: true },
   { key: 'scan_process_order', label: 'Scan Process Order', sortable: true },
   { key: 'lift_scan_type_code', label: 'Lift Scan Type Code', sortable: true },
@@ -49,7 +43,6 @@ const COMPONENT_COLUMNS = [
   { key: 'lift_expiration_type', label: 'Lift Expiration Type', sortable: true },
   { key: 'lift_expiration_days', label: 'Lift Expiration Days', sortable: true },
   { key: 'lift_expiration_date', label: 'Lift Expiration Date', sortable: true },
-  
   { key: 'lesson_product_type_code', label: 'Lesson Product Type Code', sortable: true },
   { key: 'lesson_product_type', label: 'Lesson Product Type', sortable: true },
   { key: 'lesson_discipline_code', label: 'Lesson Discipline Code', sortable: true },
@@ -57,17 +50,14 @@ const COMPONENT_COLUMNS = [
   { key: 'instructor_activity_code', label: 'Instructor Activity Code', sortable: true },
   { key: 'instructor_activity', label: 'Instructor Activity', sortable: true },
   { key: 'schedule_instructor', label: 'Schedule Instructor', sortable: true },
-  
   { key: 'pass_product_type_code', label: 'Pass Product Type Code', sortable: true },
   { key: 'pass_product_type', label: 'Pass Product Type', sortable: true },
   { key: 'pass_media_type_code', label: 'Pass Media Type Code', sortable: true },
   { key: 'pass_media_type', label: 'Pass Media Type', sortable: true },
-  
   { key: 'deferral_calendar_code', label: 'Deferral Calendar Code', sortable: true },
   { key: 'deferral_calendar', label: 'Deferral Calendar', sortable: true },
   { key: 'customer_property_set_code', label: 'Customer Property Set Code', sortable: true },
   { key: 'customer_property_set', label: 'Customer Property Set', sortable: true },
-
   { key: 'operator_id', label: 'Operator ID', sortable: true },
   { key: 'update_date', label: 'Updated', sortable: true },
 ];
@@ -98,7 +88,6 @@ export default function ProductComponentSearch({
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCompCode, setSelectedCompCode] = useState('');
-  //const [loading, setLoading] = useState(false);
 
   const [searchTitle, setSearchTitle] = useState('');
   const isResultsMode = !!searchTitle?.trim();
@@ -142,9 +131,8 @@ export default function ProductComponentSearch({
   useEffect(() => {
     if (pcTreeError) console.error('[PC Search] tree load failed', pcTreeError);
   }, [pcTreeError]);
-  
 
-   function toggleGroup(code) {
+  function toggleGroup(code) {
     setExpandedGroups(prev => {
       const next = new Set(prev);
       if (next.has(code)) next.delete(code);
@@ -215,8 +203,8 @@ export default function ProductComponentSearch({
 
       if (!found || !foundCat || !foundGroup) {
         setSelectedCompCode('');
-        setSearchTitle(`No results for code ${pc}`);
-        setResultRows([]);
+        setResultRows([{ code: '', label: `No component found for "${pc}"` }]);
+        setSearchTitle(`No results for "${pc}"`);
         return;
       }
 
@@ -288,23 +276,6 @@ export default function ProductComponentSearch({
     });
   }, [pendingAnchorCompCode, components.length]);
 
-  const jumpToComponentCategory = (row) => {
-    const { categoryCode, groupCode, code } = row;
-    if (!categoryCode || !groupCode || !code) return;
-
-    setSearchTitle('');
-    setResultRows([]);
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      next.add(groupCode);
-      return next;
-    });
-    setSelectedCategory(String(categoryCode));
-    setSelectedCompCode(String(code));
-    setPendingAnchorCompCode(String(code));
-    setTimeout(() => scrollCategoryIntoView(String(categoryCode)), 0);
-  };
-
   const headerTitle = isResultsMode
     ? searchTitle
     : selectedCatObj
@@ -318,13 +289,8 @@ export default function ProductComponentSearch({
     window.location.reload();
   };
 
-  const handleNew = () => {
-    // handle new component logic
-  };
-
-  const handleClone = () => {
-    // handle clone component logic
-  };
+  const handleNew = () => {};
+  const handleClone = () => {};
 
   const paneFooter = (
     <PaneActions
@@ -336,7 +302,12 @@ export default function ProductComponentSearch({
   );
 
   return (
-    <BrowserLayout
+    <div className="bg-white shadow-md rounded-md border border-gray-300 overflow-hidden">
+      <div className="flex items-center bg-indigo-950 px-4 py-2 rounded-t-md shrink-0">
+        <h2 className="text-white text-lg font-semibold">Product Component Search</h2>
+      </div>
+      <BrowserLayout
+        paneBottom={inlineDetailPanel}
       sidebar={
         <>
           <div className="pm-sidebar-title">Product Groups</div>
@@ -418,11 +389,11 @@ export default function ProductComponentSearch({
           loading={loading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row: any) => {
-            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            setSelectedCompCode(String(row.code ?? ''));
             onSelectProduct?.(row);
           }}
           onRowDoubleClick={(row: any) => {
-            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            setSelectedCompCode(String(row.code ?? ''));
             onOpenProduct?.(row);
           }}
           emptyMessage={
@@ -434,10 +405,11 @@ export default function ProductComponentSearch({
               ? searchTitle || 'Results (0)'
               : 'No components found'
           }
-          
         />
       }
-      paneFooter={paneFooter}
-    />
+        paneFooter={paneFooter}
+      />
+    </div>
   );
 }
+

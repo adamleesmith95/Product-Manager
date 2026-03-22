@@ -95,7 +95,7 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       {/* Left Column */}
-      <div className="space-y-4">
+      <div className="space-y-4 pc-label-col-addl-left">
         <LabeledSelect
           label="CRM Customer Type"
           options={crmCustomerTypes}
@@ -138,7 +138,7 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
       </div>
 
       {/* Right Column */}
-      <div className="space-y-4">
+      <div className="space-y-4 pc-label-col-addl-right">
         <LabeledSelect
           label="Customer Property Set"
           options={customerPropertySets}

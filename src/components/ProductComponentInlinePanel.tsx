@@ -1,9 +1,39 @@
 import React, { useState } from 'react';
 import PC_GeneralTab from '../tabs/productTables/productComponents/PC_GeneralTab';
 import PC_AdditionalTab from '../tabs/productTables/productComponents/PC_AdditionalTab';
+import PC_ProfileTab from '../tabs/productTables/productComponents/PC_ProfileTab';
+import PC_TaxTab from '../tabs/productTables/productComponents/PC_TaxTab';
+import PC_OutputTab from '../tabs/productTables/productComponents/PC_OutputTab';
 import ModalTabButton from './shared/ModalTabButton';
 
-type TabKey = 'general' | 'additional';
+type TabKey = 'general' | 'additional' | 'profile' | 'tax' | 'output';
+
+// Inline panel uses its own local form state — purely for display,
+// no update propagation needed since this is a read-only preview.
+const EMPTY_FORM = {
+  productCode: null,
+  description: '',
+  productCategoryCode: '', productCategory: '',
+  displayOrder: null,
+  productProfileTypeCode: '', productProfileType: '',
+  units: '', salesUnits: '',
+  paymentDate: null, reference: '',
+  deferralPatternCode: '', deferralPattern: '',
+  operatorId: '', updateDate: null,
+  active: false, display: false, changeRevenueLocation: false,
+  crmCustomerTypeCode: '', crmCustomerType: '',
+  crmProductCategoryCode: '', crmProductCategory: '',
+  crmProductCode: '', crmProduct: '',
+  inventoryPoolCode: '', inventoryPool: '',
+  revenueStatisticCode: '', revenueStatistic: '',
+  rosterCode: '', roster: '',
+  salesStatisticCode: '', salesStatistic: '',
+  deferralCalendarCode: '', deferralCalendar: '',
+  customerPropertySetCode: '', customerPropertySet: '',
+  revenueLocationOverrideCategoryCode: '', revenueLocationOverrideCategory: '',
+  crmEvent: false, onlineHotlist: false, reportRevenue: false,
+  printAcademyLabels: false, offlineFreeSell: false,
+};
 
 export default function ProductComponentInlinePanel({
   productCode,
@@ -13,6 +43,11 @@ export default function ProductComponentInlinePanel({
   className?: string;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>('general');
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  function update(key: string, value: any) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
 
   return (
     <section className={`pc-inline-panel ${className}`}>
@@ -30,20 +65,48 @@ export default function ProductComponentInlinePanel({
           >
             Additional
           </ModalTabButton>
+          <ModalTabButton
+            active={activeTab === 'profile'}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
+          </ModalTabButton>
+          <ModalTabButton
+            active={activeTab === 'tax'}
+            onClick={() => setActiveTab('tax')}
+          >
+            Tax
+          </ModalTabButton>
+          <ModalTabButton
+            active={activeTab === 'output'}
+            onClick={() => setActiveTab('output')}
+          >
+            Output
+          </ModalTabButton>
         </div>
       </div>
 
-      <div className="pc-inline-body">
+      <div className="pc-inline-body pc-inline-compact">
         {!productCode ? (
-          <div className="pc-inline-empty">Select a Product Code to view details.</div>
+          <div className="pc-inline-empty">Select a row to preview details.</div>
         ) : (
           <>
-            <div style={{ display: activeTab === 'general' ? 'block' : 'none' }}>
-              <PC_GeneralTab productCode={productCode} isActive={activeTab === 'general'} />
-            </div>
-            <div style={{ display: activeTab === 'additional' ? 'block' : 'none' }}>
-              <PC_AdditionalTab productCode={productCode} isActive={activeTab === 'additional'} />
-            </div>
+            {activeTab === 'general' && (
+              <PC_GeneralTab
+                productCode={productCode}
+                isActive={activeTab === 'general'}
+                form={form}
+                update={update}
+              />
+            )}
+            {activeTab === 'additional' && (
+              <PC_AdditionalTab
+                productCode={productCode}
+                isActive={activeTab === 'additional'}
+                form={form}
+                update={update}
+              />
+            )}
           </>
         )}
       </div>

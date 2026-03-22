@@ -155,7 +155,11 @@ export default function ManageProductsForSalePage() {
       <Modal
         open={detail.open}
         onClose={handleClose}
-        title={detail.product ? `Manage Product — ${detail.product.description} (${detail.product.code})` : 'Manage Product'}
+        title={
+          detail.product 
+          ? `Manage Product — ${detail.product.description} (${detail.product.code})` 
+          : 'Manage Product'
+        }
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
         panelClassName="pcphc-modal-panel"

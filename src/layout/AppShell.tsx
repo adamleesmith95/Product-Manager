@@ -1,4 +1,3 @@
-
 // src/layout/AppShell.tsx
 import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -21,10 +20,11 @@ export default function AppShell() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
-        <div className="border-b bg-white">
+        <div className="border-b bg-white shrink-0">
           <Breadcrumbs pathname={location.pathname} />
         </div>
-        <div className="flex-1 overflow-auto p-4">
+        {/* overflow-hidden here — each page controls its own scrolling */}
+        <div className="flex-1 overflow-hidden p-4 min-h-0">
           <Suspense fallback={<div className="p-6 text-sm">Loading…</div>}>
             <Outlet />
           </Suspense>

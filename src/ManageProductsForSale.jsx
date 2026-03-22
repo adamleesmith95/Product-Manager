@@ -190,24 +190,23 @@ export default function ManageProductsForSale({ product, onClose }) {
 
     <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
       <div className="h-full min-h-0 overflow-auto p-4">
-        {topTab === 'General'          && <GeneralTab form={form} update={update} />}
-        {topTab === 'Sale Locations'   && <SaleLocationsTab form={form} update={update} productPhc={phc} />}
-        {topTab === 'Product Components' && (
-          <div className="h-full min-h-0 overflow-hidden">
-            <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
-          </div>
-        )}
-        {topTab === 'Accounting'       && <AccountingTab form={form} update={update} productPhc={phc} />}
-        {topTab === 'Product Pricing'  && <ProductPricingTab form={form} update={update} productPhc={phc} />}
-        {topTab === 'Properties'       && <PropertiesTab form={form} update={update} />}
-        {topTab === 'Linked Products'  && <LinkedProductsTab form={form} update={update} />}
-        {topTab === 'Comments'         && <CommentsTab form={form} update={update} />}
-        {topTab === 'Prompts'          && <div className="p-3 text-sm text-gray-500">Prompts — coming soon.</div>}
-        {topTab === 'Auto-Renew'       && <div className="p-3 text-sm text-gray-500">Auto-Renew — coming soon.</div>}
-        {topTab === 'Display Category Grouping' && <div className="p-3 text-sm text-gray-500">Display Category Grouping — coming soon.</div>}
-        {topTab === 'Sales Modules'    && <div className="p-3 text-sm text-gray-500">Sales Modules — coming soon.</div>}
-        {topTab === 'Auto Applied'     && <div className="p-3 text-sm text-gray-500">Auto Applied — coming soon.</div>}
-        {topTab === 'Attributes'       && <div className="p-3 text-sm text-gray-500">Attributes — coming soon.</div>}
+       {(topTab === 'General') && <GeneralTab form={form} update={update} />}
+      {(topTab === 'Locations' || topTab === 'Sale Locations') && <SaleLocationsTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Components' || topTab === 'Product Components') && (
+        <div className="h-full min-h-0 overflow-hidden">
+          <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
+        </div>
+      )}
+      {(topTab === 'Accounting') && <AccountingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Pricing' || topTab === 'Product Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Properties') && <PropertiesTab form={form} update={update} />}
+      {(topTab === 'LinkedPHC' || topTab === 'Linked Products') && <LinkedProductsTab form={form} update={update} />}
+      {(topTab === 'Comments') && <CommentsTab form={form} update={update} />}
+      {(topTab === 'Prompts') && <div className="p-3 text-sm text-gray-500">Prompts — coming soon.</div>}
+      {(topTab === 'AutoRenew' || topTab === 'Auto-Renew') && <div className="p-3 text-sm text-gray-500">Auto-Renew — coming soon.</div>}
+      {(topTab === 'Grouping' || topTab === 'Display Category Grouping') && <div className="p-3 text-sm text-gray-500">Display Category Grouping — coming soon.</div>}
+      {(topTab === 'Modules' || topTab === 'Sales Modules') && <div className="p-3 text-sm text-gray-500">Sales Modules — coming soon.</div>}
+      {(topTab === 'Attributes') && <div className="p-3 text-sm text-gray-500">Attributes — coming soon.</div>}
       </div>
     </div>
   </div>
