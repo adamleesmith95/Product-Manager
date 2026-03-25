@@ -2,6 +2,12 @@
 
 /* KEEP ONE modal sizing source-of-truth (outside @layer) */
 :root {
+
+font-size: 13px; /* was 16px browser default — drops everything ~1 size */
+
+
+
+
   --pm-top-ui: 220px;
   --pm-vh: calc(100vh - var(--pm-top-ui));
 
@@ -332,7 +338,7 @@
 
 
 /* Unified footer placement/padding */
-.pm-pane-footer { @apply mt-3 flex gap-2 justify-end px-3; }
+.pm-pane-footer { @apply mt-3 flex gap-2 justify-end px-3 py-1; }
 
 /* (Optional) divider full-bleed helper (you already added) */
 .pm-divider-bleed { margin-left: -1rem; margin-right: -1rem; } /* cancels px-4 if present */

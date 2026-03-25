@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledInput from '../../../components/LabeledInput';
 import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
+import { useFormSeed } from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -45,6 +46,17 @@ function bindSelect(baseKey, options) {
     },
     !!productCode && isActive
   );
+
+  // ✅ CENTRALIZED FORM SEEDING
+  useFormSeed(data, update, [
+    { key: 'productCategoryCode', transform: v => String(v ?? '') },
+    { key: 'productProfileTypeCode', transform: v => String(v ?? '') },
+    { key: 'deferralPatternCode', transform: v => String(v ?? '') },
+    { key: 'active', transform: v => v === 'Y' },
+    { key: 'display', transform: v => v === 'Y' },
+    { key: 'changeRevenueLocation', transform: v => v === 'Y' },
+  ]);
+  
 
   const row = data ?? EMPTY;
 

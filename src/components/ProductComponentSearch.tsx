@@ -316,7 +316,7 @@ export default function ProductComponentSearch({
               const open = expandedGroups.has(group.groupCode);
               return (
                 <div key={group.groupCode} className="mb-2">
-                  <div className="pm-group-header">
+                  <div className="pm-group-header hover:bg-gray-50">
                     <button
                       type="button"
                       className="inline-flex items-center justify-center w-5 h-5 rounded border border-gray-200 bg-white hover:bg-gray-50 ml-1 shrink-0"
@@ -325,25 +325,26 @@ export default function ProductComponentSearch({
                     >
                       <span className="text-sm">{open ? '▾' : '▸'}</span>
                     </button>
-                    <span className="pm-group-label">{group.label}</span>
+                    <span className="pm-group-label " onClick={() => toggleGroup(group.groupCode)}>{group.label}</span>
                     <span className="pm-group-code">({group.groupCode})</span>
                   </div>
                   {open && (group.categories ?? []).map(cat => {
                     const selected = String(selectedCategory) === String(cat.categoryCode);
                     return (
-                      <button
-                        key={cat.categoryCode}
-                        id={`pc-cat-${cat.categoryCode}`}
-                        type="button"
-                        onClick={() => setCategoryAndResetSelection(String(cat.categoryCode))}
-                        className={`${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} pm-cat-indent block`}
-                        title={cat.label}
-                      >
-                        <div className="truncate">
-                          {cat.label}
-                          <span className="ml-2 text-[11px] text-neutral-500">({cat.categoryCode})</span>
-                        </div>
-                      </button>
+                      <div key={cat.categoryCode} className="pm-cat-indent">
+                        <button
+                          id={`pc-cat-${cat.categoryCode}`}
+                          type="button"
+                          onClick={() => setCategoryAndResetSelection(String(cat.categoryCode))}
+                          className={`${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
+                          title={cat.label}
+                        >
+                          <div className="truncate">
+                            {cat.label}
+                            <span className="ml-2 text-[11px] text-neutral-500">({cat.categoryCode})</span>
+                          </div>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>

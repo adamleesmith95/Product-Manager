@@ -3,6 +3,7 @@ import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledSelect from '../../../components/LabeledSelect';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
+import { useFormSeed } from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   crmCustomerTypeCode: '', crmCustomerType: '',
@@ -66,24 +67,26 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
     !!productCode && isActive
   );
 
-  useEffect(() => {
-  if (!data) return;
-  update('crmCustomerTypeCode',                 String(data.crmCustomerTypeCode ?? ''));
-  update('crmProductCategoryCode',              String(data.crmProductCategoryCode ?? ''));
-  update('crmProductCode',                      String(data.crmProductCode ?? ''));
-  update('inventoryPoolCode',                   String(data.inventoryPoolCode ?? ''));
-  update('revenueStatisticCode',                String(data.revenueStatisticCode ?? ''));
-  update('rosterCode',                          String(data.rosterCode ?? ''));
-  update('salesStatisticCode',                  String(data.salesStatisticCode ?? ''));
-  update('deferralCalendarCode',                String(data.deferralCalendarCode ?? ''));
-  update('customerPropertySetCode',             String(data.customerPropertySetCode ?? ''));
-  update('revenueLocationOverrideCategoryCode', String(data.revenueLocationOverrideCategoryCode ?? ''));
-  update('crmEvent',          data.crmEvent === 'Y');
-  update('onlineHotlist',     data.onlineHotlist === 'Y');
-  update('reportRevenue',     data.reportRevenue === 'Y');
-  update('printAcademyLabels',data.printAcademyLabels === 'Y');
-  update('offlineFreeSell',   data.offlineFreeSell === 'Y');
-}, [data]);
+
+  // ✅ CENTRALIZED FORM SEEDING
+  useFormSeed(data, update, [
+    { key: 'crmCustomerTypeCode', transform: v => String(v ?? '') },
+    { key: 'crmProductCategoryCode', transform: v => String(v ?? '') },
+    { key: 'crmProductCode', transform: v => String(v ?? '') },
+    { key: 'inventoryPoolCode', transform: v => String(v ?? '') },
+    { key: 'revenueStatisticCode', transform: v => String(v ?? '') },
+    { key: 'rosterCode', transform: v => String(v ?? '') },
+    { key: 'salesStatisticCode', transform: v => String(v ?? '') },
+    { key: 'deferralCalendarCode', transform: v => String(v ?? '') },
+    { key: 'customerPropertySetCode', transform: v => String(v ?? '') },
+    { key: 'revenueLocationOverrideCategoryCode', transform: v => String(v ?? '') },
+    { key: 'crmEvent', transform: v => v === 'Y' },
+    { key: 'onlineHotlist', transform: v => v === 'Y' },
+    { key: 'reportRevenue', transform: v => v === 'Y' },
+    { key: 'printAcademyLabels', transform: v => v === 'Y' },
+    { key: 'offlineFreeSell', transform: v => v === 'Y' },
+  ]);
+
 
   const row = data ?? EMPTY;
 
