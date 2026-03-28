@@ -5,7 +5,7 @@ import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
-import { useFormSeed , asBoolean } from '../../../hooks/useFormSeed';
+import { useFormSeed , asBoolean , asNumber} from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -66,6 +66,7 @@ function bindSelect(baseKey, options) {
     { key: 'active',                transform: asBoolean },
     { key: 'display',               transform: asBoolean },
     { key: 'changeRevenueLocation', transform: asBoolean },
+    { key: 'paymentDate' },
   ]);
    /* End of Added 3/28/26*/
 
@@ -137,7 +138,13 @@ function bindSelect(baseKey, options) {
 
             
 
-          <ReadonlyField label="Payment Date" value={row.paymentDate} />
+          
+          <LabeledDateInput
+                    label="Payment Date"
+                    value={form.paymentDate ?? ''}
+                    onChange={(v) => update('paymentDate', v)}
+                  />
+
           <ReadonlyField label="Reference" value={row.reference} />
 
           <LabeledSelect

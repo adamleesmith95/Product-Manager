@@ -207,9 +207,11 @@ addLookupRoute(
   '/lookups/expiration-types',
   `SELECT expiration_type AS code, expiration_type AS label
    FROM s_lift_product_profile
-   WHERE expiration_type IS NOT NULL
+   WHERE expiration_type IS NOT NULL or expiration_type <> ''
    GROUP BY expiration_type
    ORDER BY expiration_type;`
 );
+
+
 
 module.exports = router;
