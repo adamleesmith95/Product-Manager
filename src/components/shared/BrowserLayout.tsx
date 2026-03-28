@@ -22,7 +22,7 @@ export default function BrowserLayout({
   hideSidebar = false,
 }: BrowserLayoutProps) {
   return (
-    <div className={className}>
+    <div className={`flex flex-col h-full min-h-0 ${className}`}>
       {searchPanel && <div className="pm-search-section mb-4">{searchPanel}</div>}
 
       <div className="grid grid-cols-12 gap-4">

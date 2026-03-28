@@ -181,4 +181,35 @@ addLookupRoute(
    ORDER BY description;`
 );
 
+/** Manage Product Components — Profile Tab **/
+addLookupRoute(
+  '/lookups/lift-product-types',
+  `SELECT lift_product_type_code AS code, description AS label
+   FROM s_lift_product_type
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/scan-process-orders',
+  `SELECT scan_process_order_code AS code, description AS label
+   FROM s_scan_process_order
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/lift-scan-types',
+  `SELECT scan_type_code AS code, description AS label
+   FROM s_scan_type
+   ORDER BY description;`
+);
+
+addLookupRoute(
+  '/lookups/expiration-types',
+  `SELECT expiration_type AS code, expiration_type AS label
+   FROM s_lift_product_profile
+   WHERE expiration_type IS NOT NULL
+   GROUP BY expiration_type
+   ORDER BY expiration_type;`
+);
+
 module.exports = router;

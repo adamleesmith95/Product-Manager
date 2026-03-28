@@ -107,6 +107,14 @@ export default function ProductComponentInlinePanel({
                 update={update}
               />
             )}
+            {activeTab === 'profile' && (
+              <PC_ProfileTab
+                productCode={productCode}
+                isActive={activeTab === 'profile'}
+                form={form}
+                update={update}
+              />
+            )}
           </>
         )}
       </div>

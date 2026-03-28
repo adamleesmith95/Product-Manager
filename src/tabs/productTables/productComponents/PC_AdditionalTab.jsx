@@ -3,7 +3,7 @@ import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledSelect from '../../../components/LabeledSelect';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
-import { useFormSeed } from '../../../hooks/useFormSeed';
+import { useFormSeed, asBoolean} from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   crmCustomerTypeCode: '', crmCustomerType: '',
@@ -67,7 +67,7 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
     !!productCode && isActive
   );
 
-
+/* Commented out 3/28/26 for the below
   // ✅ CENTRALIZED FORM SEEDING
   useFormSeed(data, update, [
     { key: 'crmCustomerTypeCode', transform: v => String(v ?? '') },
@@ -86,7 +86,26 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
     { key: 'printAcademyLabels', transform: v => v === 'Y' },
     { key: 'offlineFreeSell', transform: v => v === 'Y' },
   ]);
-
+*/
+/* Added 3/28/26 */
+  useFormSeed(data, update, [
+    { key: 'crmCustomerTypeCode' },
+    { key: 'crmProductCategoryCode' },
+    { key: 'crmProductCode' },
+    { key: 'inventoryPoolCode' },
+    { key: 'revenueStatisticCode' },
+    { key: 'rosterCode' },
+    { key: 'salesStatisticCode' },
+    { key: 'deferralCalendarCode' },
+    { key: 'customerPropertySetCode' },
+    { key: 'revenueLocationOverrideCategoryCode' },
+    { key: 'crmEvent',           transform: asBoolean },
+    { key: 'onlineHotlist',      transform: asBoolean },
+    { key: 'reportRevenue',      transform: asBoolean },
+    { key: 'printAcademyLabels', transform: asBoolean },
+    { key: 'offlineFreeSell',    transform: asBoolean },
+  ]);
+  /* End of Added 3/28/26 */
 
   const row = data ?? EMPTY;
 

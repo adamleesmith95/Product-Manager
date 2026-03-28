@@ -342,4 +342,43 @@ router.get('/product-components/:productCode/additional', async (req, res, next)
   }
 });
 
+router.get('/product-components/:productCode/profile', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT
+        ISNULL(slpp.lift_product_type_code, '0')   AS liftProductTypeCode,
+        slpt.description                            AS liftProductType,
+        ISNULL(slpp.scan_process_order_code, '0')  AS scanProcessOrderCode,
+        sspo.description                            AS scanProcessOrder,
+        ISNULL(slpp.scan_type_code, '0')           AS liftScanTypeCode,
+        sst.description                             AS liftScanType,
+        slpp.lift_charge_ind                        AS liftChargeInd,
+        slpp.load_to_media_ind                      AS loadToMediaInd,
+        CONVERT(VARCHAR, slpp.effective_date, 23)   AS liftEffectiveDate,
+        slpp.expiration_type                        AS expirationType,
+        slpp.expiration_days                        AS expirationDays,
+        CONVERT(VARCHAR, slpp.expiration_date, 23)  AS expirationDate
+      FROM s_product sp
+      LEFT JOIN s_lift_product_profile slpp
+        ON sp.product_code = slpp.product_code
+      LEFT JOIN s_lift_product_type slpt
+        ON slpp.lift_product_type_code = slpt.lift_product_type_code
+      LEFT JOIN s_scan_process_order sspo
+        ON slpp.scan_process_order_code = sspo.scan_process_order_code
+      LEFT JOIN s_scan_type sst
+        ON slpp.scan_type_code = sst.scan_type_code
+      WHERE sp.product_code = @productCode
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

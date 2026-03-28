@@ -7,6 +7,7 @@ import '../styles/pc-inline-preview.css';
 import Modal from '../components/Modal';
 import PC_GeneralTab from '../tabs/productTables/productComponents/PC_GeneralTab';
 import PC_AdditionalTab from '../tabs/productTables/productComponents/PC_AdditionalTab';
+import PC_ProfileTab from '../tabs/productTables/productComponents/PC_ProfileTab';
 import ModalTabButton from '../components/shared/ModalTabButton';
 
 export default function ManageProductComponent() {
@@ -128,6 +129,12 @@ export default function ManageProductComponent() {
               >
                 Additional
               </ModalTabButton>
+              <ModalTabButton
+                active={activeTab === 'profile'}
+                onClick={() => setActiveTab('profile')}
+              >
+                Profile
+              </ModalTabButton>
             </div>
             <div className="pm-tab-body pm-form-shell">
               {activeTab === 'general' && (
@@ -142,6 +149,14 @@ export default function ManageProductComponent() {
                 <PC_AdditionalTab
                   productCode={detail.productCode}
                   isActive={activeTab === 'additional'}
+                  form={form}
+                  update={update}
+                />
+              )}
+              {activeTab === 'profile' && (
+                <PC_ProfileTab
+                  productCode={detail.productCode}
+                  isActive={activeTab === 'profile'}
                   form={form}
                   update={update}
                 />

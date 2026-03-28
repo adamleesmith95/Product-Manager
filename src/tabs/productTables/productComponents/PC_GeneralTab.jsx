@@ -5,7 +5,7 @@ import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
-import { useFormSeed } from '../../../hooks/useFormSeed';
+import { useFormSeed , asBoolean } from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -48,6 +48,7 @@ function bindSelect(baseKey, options) {
   );
 
   // ✅ CENTRALIZED FORM SEEDING
+  /* Commented out 3/28/26 for the below
   useFormSeed(data, update, [
     { key: 'productCategoryCode', transform: v => String(v ?? '') },
     { key: 'productProfileTypeCode', transform: v => String(v ?? '') },
@@ -56,7 +57,17 @@ function bindSelect(baseKey, options) {
     { key: 'display', transform: v => v === 'Y' },
     { key: 'changeRevenueLocation', transform: v => v === 'Y' },
   ]);
-  
+  */
+ /* Added 3/28/26*/
+   useFormSeed(data, update, [
+    { key: 'productCategoryCode' },
+    { key: 'productProfileTypeCode' },
+    { key: 'deferralPatternCode' },
+    { key: 'active',                transform: asBoolean },
+    { key: 'display',               transform: asBoolean },
+    { key: 'changeRevenueLocation', transform: asBoolean },
+  ]);
+   /* End of Added 3/28/26*/
 
   const row = data ?? EMPTY;
 
