@@ -72,6 +72,7 @@ interface Props {
   onClone?: () => void;
   newLabel?: string;
   cloneLabel?: string;
+  componentAnchorCode?: string;
 }
 
 export default function ProductComponentSearch({
@@ -82,6 +83,7 @@ export default function ProductComponentSearch({
   onClone,
   newLabel,
   cloneLabel,
+  componentAnchorCode,
 }: Props) {
   const [filters, setFilters] = useState({ pc: '', description: '' });
   const [tree, setTree] = useState([]);
@@ -99,9 +101,23 @@ export default function ProductComponentSearch({
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
-  const scrollRowIntoView = (code) => {
-    const el = document.getElementById(`pc-row-${code}`);
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const scrollRowIntoView = (code) => {
+  const target = String(code);
+  const selector =
+  'tr[data-table-key="product-component-search"][data-row-key="' + target + '"]';
+
+  const attempt = (attemptsLeft) => {
+  const el = document.querySelector(selector);
+  if (el) {
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return;
+  }
+  if (attemptsLeft > 0) {
+  setTimeout(() => attempt(attemptsLeft - 1), 100);
+  }
+  };
+
+  attempt(6);
   };
 
   const { cache, setCache } = useDataCache();
@@ -131,6 +147,37 @@ export default function ProductComponentSearch({
   useEffect(() => {
     if (pcTreeError) console.error('[PC Search] tree load failed', pcTreeError);
   }, [pcTreeError]);
+
+// For opening new tab when modify button is clicked in Product Component tab under manage-products-for-sale
+useEffect(() => {
+  if (!componentAnchorCode || !tree.length) return;
+
+  const codeLower = componentAnchorCode.toLowerCase();
+  let found = null, foundGroup = null, foundCat = null;
+
+  outer: for (const g of tree) {
+    for (const cat of (g.categories ?? [])) {
+      for (const comp of (cat.components ?? [])) {
+        if (String(comp.code ?? '').toLowerCase() === codeLower) {
+          found = comp; foundGroup = g; foundCat = cat;
+          break outer;
+        }
+      }
+    }
+  }
+
+  if (!found || !foundCat || !foundGroup) return;
+
+  setExpandedGroups(prev => { const next = new Set(prev); next.add(foundGroup.groupCode); return next; });
+  setSelectedCategory(String(foundCat.categoryCode));
+  setSelectedCompCode(String(found.code));
+  onSelectProduct?.(found);
+  setPendingAnchorCompCode(String(found.code));
+  setTimeout(() => scrollCategoryIntoView(String(foundCat.categoryCode)), 0);
+}, [componentAnchorCode, tree]);
+
+
+
 
   function toggleGroup(code) {
     setExpandedGroups(prev => {
@@ -217,6 +264,7 @@ export default function ProductComponentSearch({
       });
       setSelectedCategory(String(foundCat.categoryCode));
       setSelectedCompCode(String(found.code));
+      onSelectProduct?.(found);
       setPendingAnchorCompCode(String(found.code));
       setTimeout(() => scrollCategoryIntoView(String(foundCat.categoryCode)), 0);
       return;
@@ -267,14 +315,18 @@ export default function ProductComponentSearch({
     }
   }, [selectedCategory]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!pendingAnchorCompCode) return;
     requestAnimationFrame(() => {
-      setSelectedCompCode(pendingAnchorCompCode);
-      scrollRowIntoView(pendingAnchorCompCode);
+    const code = String(pendingAnchorCompCode);
+    setSelectedCompCode(code);
+    scrollRowIntoView(code);
+            const hit = components.find((c) => String(c?.code ?? '') === code);
+      if (hit) onSelectProduct?.(hit);
+
       setPendingAnchorCompCode(null);
     });
-  }, [pendingAnchorCompCode, components.length]);
+  }, [pendingAnchorCompCode, components, onSelectProduct]);
 
   const headerTitle = isResultsMode
     ? searchTitle

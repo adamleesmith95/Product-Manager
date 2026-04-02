@@ -351,11 +351,8 @@ export default function DisplayCategorySearch({
     const attemptScroll = (attemptsLeft: number) => {
       // DataTable applies selectedRowKey as a highlighted row - try known selectors
       const selectors = [
-        `tr[data-row-key="${target}"]`,
-        `tr[data-key="${target}"]`,
-        `tr.pm-row--selected`,
-        `tr.pm-row-selected`,
-        `tr.selected`,
+      'tr[data-table-key="display-category-search"][data-row-key="' + target + '"]',
+      'tr[data-table-key="display-category-search"].pm-row--selected',
       ];
 
       let found = false;

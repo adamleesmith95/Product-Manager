@@ -126,12 +126,8 @@ export default function DisplayGroupSearch({
 
     const attemptScroll = (attemptsLeft: number) => {
       const selectors = [
-        `[data-row-key="${code}"]`,
-        `[data-key="${code}"]`,
-        `[data-id="${code}"]`,
-        `tr.pm-row--selected`,
-        `tr.pm-row-selected`,
-        `tr.selected`,
+      'tr[data-table-key="display-group-search"][data-row-key="' + code + '"]',
+      'tr[data-table-key="display-group-search"].pm-row--selected',
       ];
 
       for (const sel of selectors) {

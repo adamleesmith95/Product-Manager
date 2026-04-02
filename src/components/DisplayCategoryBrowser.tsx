@@ -242,10 +242,26 @@ export default function DisplayCategoryBrowser({
     if (catsError) console.error("Failed to load display categories", catsError);
   }, [catsError]);
 
-  const scrollRowIntoView = (code: string) => {
-    const el = document.getElementById(`phc-row-${code}`);
-    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const scrollRowIntoView = (code: string) => {
+  const target = String(code);
+  const selector =
+  'tr[data-table-key="display-category-browser"][data-row-key="' + target + '"]';
+
+  const attempt = (attemptsLeft: number) => {
+  const el = document.querySelector(selector) as HTMLElement | null;
+  if (el) {
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return;
+  }
+  if (attemptsLeft > 0) {
+  setTimeout(() => attempt(attemptsLeft - 1), 100);
+  }
   };
+
+  attempt(6);
+  };
+
+
 
   const scrollCategoryIntoView = (categoryCode: string) => {
     const el = document.getElementById(`cat-${categoryCode}`);

@@ -305,11 +305,17 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       : [];
 
     if (!targets.length) return;
-
-    alert(
-      `Modify… for ${targets.length} component(s).\n\n${targets
-        .map((t) => `${t.component_desc} (${t.component_code})`)
-        .join('\n')}`
+// replaced 4/2/26 AS with the below stub (actual implementation for "Modify" action)
+    // alert(
+    //   `Modify… for ${targets.length} component(s).\n\n${targets
+    //     .map((t) => `${t.component_desc} (${t.component_code})`)
+    //     .join('\n')}`
+    // );
+//replacement here: open a new window/tab to the component management page, passing the first selected component code as a query param for focus (actual implementation TBD)
+        const code = targets[0].component_code;
+    window.open(
+      `/product-manager/manage-product-component?focusComponentCode=${encodeURIComponent(code)}`,
+      '_blank'
     );
   }
 

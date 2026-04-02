@@ -33,7 +33,11 @@ export default function PC_ProfileTab({ productCode, isActive, form, update }) {
   const { options: liftProductTypes }   = useLookup('/api/lookups/lift-product-types');
   const { options: scanProcessOrders }  = useLookup('/api/lookups/scan-process-orders');
   const { options: liftScanTypes }      = useLookup('/api/lookups/lift-scan-types');
-  const { options: expirationTypes }    = useLookup('/api/lookups/expiration-types');
+  //const { options: expirationTypes }    = useLookup('/api/lookups/expiration-types');
+  const EXPIRATION_TYPES = [
+    { value: 'D', label: 'Days' },
+    { value: 'T', label: 'Date' },
+  ];
 
   function bindSelect(baseKey, options) {
     const codeKey = `${baseKey}Code`;
@@ -104,8 +108,9 @@ export default function PC_ProfileTab({ productCode, isActive, form, update }) {
 
         <LabeledSelect
           label="Expiration Type"
-          options={expirationTypes}
-          {...bindSelect('expirationType', expirationTypes)}
+          options={EXPIRATION_TYPES}
+          value={String(form.expirationType ?? '')}
+          onChange={(e) => update('expirationType', String(e?.target?.value ?? ''))}
         />
 
         <LabeledDateInput

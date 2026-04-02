@@ -9,6 +9,7 @@ import PC_GeneralTab from '../tabs/productTables/productComponents/PC_GeneralTab
 import PC_AdditionalTab from '../tabs/productTables/productComponents/PC_AdditionalTab';
 import PC_ProfileTab from '../tabs/productTables/productComponents/PC_ProfileTab';
 import ModalTabButton from '../components/shared/ModalTabButton';
+import { useLocation } from 'react-router-dom';
 
 export default function ManageProductComponent() {
   const [selectedProductCode, setSelectedProductCode] = useState<number | null>(null);
@@ -46,6 +47,16 @@ export default function ManageProductComponent() {
   };
 
   const [form, setForm] = useState(EMPTY);
+
+  // inside the component:
+const location = useLocation();
+const [componentAnchorCode, setComponentAnchorCode] = useState<string>('');
+
+useEffect(() => {
+  const qs = new URLSearchParams(location.search);
+  const code = qs.get('focusComponentCode') ?? '';
+  if (code) setComponentAnchorCode(code);
+}, [location.search]);
 
   function update(key: string, value: any) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -95,6 +106,7 @@ export default function ManageProductComponent() {
         <ProductComponentSearch
           onSelectProduct={handleSelectProduct}
           onOpenProduct={handleOpenProduct}
+          componentAnchorCode={componentAnchorCode}   // <-- add this
           inlineDetailPanel={
             <ProductComponentInlinePanel productCode={selectedProductCode} />
           }
