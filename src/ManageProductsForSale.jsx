@@ -111,7 +111,7 @@ export default function ManageProductsForSale({ product, onClose }) {
     return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
   });
 
-  const [topTab, setTopTab]       = useState(() => tabForms['topTab']    ?? 'General');
+  const [topTab, setTopTab] = useState('General');
 
   // Reset form when product changes
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function ManageProductsForSale({ product, onClose }) {
   }, [productKey]);
 
   // Persist active tab state
-  useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
+  //useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
 
 
     const update = (key, value) => {
@@ -156,6 +156,20 @@ export default function ManageProductsForSale({ product, onClose }) {
     if (!phc) return;
     const key = `product-components-${phc}`;
     if (getDataCache(key)) return;
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      fetch(`${API_BASE}/api/components/tree`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) setDataCache(treeKey, data); })
+        .catch(() => {});
+    }, []); // empty deps — once on mount
+
+
+        // Prefetch components tree (once per session — safety net for direct double-click)
+    useEffect(() => {
+      const treeKey = 'components-tree';
+      if (getDataCache(treeKey)) return;
+      
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
     fetch(`${API_BASE}/api/products/${phc}/components`)

@@ -83,6 +83,7 @@ interface DisplayCategoryBrowserProps {
   onOpenProduct: (product: ProductRow) => void;
   onModifyCategory?: (row: any) => void;
   onGoToDisplayCategory?: (row: any) => void;
+  onPhcRowClick?: (row: ProductRow) => void;  // NEW
   categoryAnchor?: { code: string; ts: number } | null;
 }
 
@@ -149,6 +150,7 @@ export default function DisplayCategoryBrowser({
   onOpenProduct,
   onModifyCategory,
   onGoToDisplayCategory,
+  onPhcRowClick,          // NEW
   categoryAnchor = null,
 }: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
@@ -693,7 +695,10 @@ export default function DisplayCategoryBrowser({
             rowKey="code"
             storageKey="display-category-browser"
             selectedRowKey={selectedPhcCode}
-            onRowClick={(row) => setSelectedPhcCode(row.code)}
+            onRowClick={(row) => {
+              setSelectedPhcCode(row.code);
+              onPhcRowClick?.(row);
+            }}
             onRowDoubleClick={(row) => {
               setSelectedPhcCode(null);
               onOpenProduct?.(row);

@@ -91,6 +91,9 @@ useEffect(() => {
   const handleOpenProduct = (row: any) => {
     const code = Number(row?.code ?? row?.productCode);
     const description = String(row?.description ?? row?.label ?? row?.name ?? '');
+
+    setActiveTab('general'); // force default tab on every open
+
     setDetail({
       open: true,
       productCode: Number.isFinite(code) ? code : null,
