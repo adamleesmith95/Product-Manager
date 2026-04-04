@@ -326,6 +326,13 @@ export default function DisplayCategoryBrowser({
         setInlineCode("");
         setInlineDesc("");
 
+
+                console.log('[DCB] applying pendingAnchorCode after rows load', {
+          pendingAnchorCode,
+          selectedCat,
+          rowCount: recs.length,
+        });
+
         const cat = cats.find((c) => c.code === selectedCat);
         if (cat) {
           setLastCatCode(cat.code);
@@ -512,6 +519,7 @@ export default function DisplayCategoryBrowser({
       setInlineCode("");
       setInlineDesc("");
     };
+    
     window.addEventListener("go-back-to-categories", handler);
     return () => window.removeEventListener("go-back-to-categories", handler);
   }, [lastCatCode, lastCatName]);
@@ -547,6 +555,8 @@ export default function DisplayCategoryBrowser({
     window.addEventListener("go-back-to-categories-specific", handler as EventListener);
     return () =>
       window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
+
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -711,13 +721,13 @@ export default function DisplayCategoryBrowser({
           <>
             <button className="btn btn-light">New</button>
             <button className="btn btn-light">Clone</button>
-          </>
+          </> 
         }
       />
 
       {catCtx && (
         <div
-          className="fixed z-[1000] min-w-[180px] rounded border border-gray-300 bg-white shadow-md"
+          className="fixed z-1000 min-w-45 rounded border border-gray-300 bg-white shadow-md"
           style={{ left: catCtx.x, top: catCtx.y }}
           onClick={(e) => e.stopPropagation()}
         >

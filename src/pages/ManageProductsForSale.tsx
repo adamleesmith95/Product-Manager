@@ -62,24 +62,76 @@ export default function ManageProductsForSalePage() {
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const qsCode = String(qs.get('focusCategoryCode') ?? '');
+    const qsPhc = String(qs.get('focusPhcCode') ?? '');
     const qsTs = Number(qs.get('navTs') ?? Date.now());
     const qsOpen = qs.get('openCategoryModal');
 
     const state: any = location.state ?? {};
     const stateCode = String(state.focusCategoryCode ?? '');
+    const statePhc = String(state.focusPhcCode ?? '');
     const stateOpen = Boolean(state.openCategoryModal);
 
     const focusCategoryCode = qsCode || stateCode;
+    const focusPhcCode = qsPhc || statePhc;
     const navTs = Number.isFinite(qsTs) ? qsTs : Date.now();
     const openCategoryModal = qsOpen != null ? qsOpen === 'true' : stateOpen; // ADD
 
-    if (!focusCategoryCode) {
-      console.log('[MPFS] no focusCategoryCode; skipping');
+        if (!focusCategoryCode && !focusPhcCode) {
+      console.log('[MPFS] no focusCategoryCode or focusPhcCode; skipping');
+      return;
+    }
+    
+    // If we have a PHC code but no category, look it up
+    if (!focusCategoryCode && focusPhcCode) {
+      console.log('[MPFS] no focusCategoryCode — fetching from PHC', focusPhcCode);
+      navigate(location.pathname, { replace: true, state: {} });
+      fetch(`/api/products?code=${encodeURIComponent(focusPhcCode)}&expandCategory=true`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          const catCode = String(data?.anchorCategory ?? '');
+          console.log('[MPFS] resolved category from PHC', { focusPhcCode, catCode });
+          if (!catCode) return;
+          setCategoryAnchor({ code: catCode, ts: navTs });
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('go-back-to-categories-specific', {
+                detail: { categoryCode: catCode, phcCode: focusPhcCode },
+              })
+            );
+          }, 120);
+        })
+        .catch((err) => console.error('[MPFS] failed to resolve PHC category', err));
       return;
     }
 
-    console.log('[MPFS] applying anchor', { focusCategoryCode, navTs, openCategoryModal });
+    console.log('[MPFS] applying anchor', { focusCategoryCode, focusPhcCode, navTs, openCategoryModal });
     setCategoryAnchor({ code: focusCategoryCode, ts: navTs });
+
+        if (focusPhcCode) {
+      const payload = {
+        categoryCode: focusCategoryCode,
+        phcCode: focusPhcCode,
+      };
+    
+      let attempts = 0;
+      const maxAttempts = 6;
+    
+      const fire = () => {
+        attempts += 1;
+        console.log('[MPFS] dispatch go-back-to-categories-specific', { payload, attempts });
+    
+        window.dispatchEvent(
+          new CustomEvent('go-back-to-categories-specific', { detail: payload })
+        );
+    
+        if (attempts < maxAttempts) {
+          setTimeout(fire, 120);
+        }
+      };
+    
+      // Start after initial mount settles
+      setTimeout(fire, 120);
+    }
 
     if (openCategoryModal) {
       setDcDetail({

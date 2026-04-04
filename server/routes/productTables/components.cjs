@@ -278,6 +278,36 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
   }
 });
 
+router.get('/product-components/:productCode/phcs', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT DISTINCT
+        sph.product_header_code AS productHeaderCode,
+        sph.description AS productHeaderDescription,
+        sph.active_ind AS productHeaderActive,
+        sp.product_code AS productCode,
+        sp.description AS productDescription,
+        sp.active_ind AS productActive
+      FROM s_product_header_location sphl
+      JOIN s_product_header sph
+        ON sph.product_header_code = sphl.product_header_code
+      JOIN s_product sp
+        ON sp.product_code = sphl.product_code
+      WHERE sphl.product_code = @productCode
+      ORDER BY sph.product_header_code, sph.description;
+    `);
+
+    res.json({ rows: result.recordset ?? [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/product-components/:productCode/additional', async (req, res, next) => {
   try {
     const productCode = Number(req.params.productCode);

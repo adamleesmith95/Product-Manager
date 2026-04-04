@@ -8,9 +8,14 @@ import PropertiesTab from './tabs/productTables/productsForSale/PropertiesTab.js
 import LinkedProductsTab from './tabs/productTables/productsForSale/LinkedProductsTab';
 import CommentsTab from './tabs/productTables/productsForSale/CommentsTab';
 import SaleLocationsTab from './tabs/productTables/productsForSale/SaleLocationsTab';
+import PromptsTab from './tabs/productTables/productsForSale/PromptsTab';
 import ProductComponentsTab from './tabs/productTables/productsForSale/ProductComponentsTab';
 import AccountingTab from './tabs/productTables/productsForSale/AccountingTab';
 import ProductPricingTab from './tabs/productTables/productsForSale/ProductPricingTab';
+import AutoRenewTab from './tabs/productTables/productsForSale/AutoRenewTab';
+import DisplayCategoryGroupingTab from './tabs/productTables/productsForSale/DisplayCategoryGroupingTab';
+import SalesModulesTab from './tabs/productTables/productsForSale/SalesModulesTab';
+import AttributesTab from './tabs/productTables/productsForSale/AttributesTab';
 
 const topTabs = ['General', 'Locations' , 'Components', 'Accounting' , 'Pricing' , 'Prompts' , 
   'Properties', 'LinkedPHC', 'Comments' , 'AutoRenew' , 'Grouping' , 'Modules', //'AutoApplied' , 
@@ -212,15 +217,15 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
         </div>
       )}
       {(topTab === 'Accounting') && <AccountingTab form={form} update={update} productPhc={phc} />}
-      {(topTab === 'Pricing' || topTab === 'Product Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
       {(topTab === 'Properties') && <PropertiesTab form={form} update={update} />}
-      {(topTab === 'LinkedPHC' || topTab === 'Linked Products') && <LinkedProductsTab form={form} update={update} />}
+      {(topTab === 'LinkedPHC') && <LinkedProductsTab form={form} update={update} />}
       {(topTab === 'Comments') && <CommentsTab form={form} update={update} />}
-      {(topTab === 'Prompts') && <div className="p-3 text-sm text-gray-500">Prompts — coming soon.</div>}
-      {(topTab === 'AutoRenew' || topTab === 'Auto-Renew') && <div className="p-3 text-sm text-gray-500">Auto-Renew — coming soon.</div>}
-      {(topTab === 'Grouping' || topTab === 'Display Category Grouping') && <div className="p-3 text-sm text-gray-500">Display Category Grouping — coming soon.</div>}
-      {(topTab === 'Modules' || topTab === 'Sales Modules') && <div className="p-3 text-sm text-gray-500">Sales Modules — coming soon.</div>}
-      {(topTab === 'Attributes') && <div className="p-3 text-sm text-gray-500">Attributes — coming soon.</div>}
+      {(topTab === 'Prompts') && <PromptsTab form={form} update={update} />}
+      {(topTab === 'AutoRenew' && <AutoRenewTab form={form} update={update} />)}
+      {(topTab === 'Grouping') && <DisplayCategoryGroupingTab form={form} update={update} />}
+      {(topTab === 'Modules') && <SalesModulesTab form={form} update={update} />}
+      {(topTab === 'Attributes') && <AttributesTab form={form} update={update} />}
       </div>
     </div>
   </div>
