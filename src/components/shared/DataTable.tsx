@@ -189,7 +189,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
           </tr>
         </thead>
         <tbody>
-          {data.map((row, idx) => {
+          {sortedData.map((row, idx) => {
 const resolvedRowKey = String(row[rowKey] ?? idx);
 
             return (

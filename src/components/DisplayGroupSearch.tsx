@@ -11,12 +11,12 @@ import RowContextMenu from './shared/RowContextMenu';
 const TABLE_STORAGE_KEY = 'display-group-search';
 
 const COLUMNS = [
-  { key: 'code', label: 'Code', width: 72, maxWidth: 90, sortType: 'string' as const },
-  { key: 'description', label: 'Description', maxWidth: 100, sortType: 'string' as const },
-  { key: 'active', label: 'Active', width: 64, maxWidth: 76, sortType: 'string' as const },
-  { key: 'displayOrder', label: 'Display Order', maxWidth: 100, sortType: 'number' as const },
-  { key: 'operatorId', label: 'Operator ID', maxWidth: 100, sortType: 'string' as const },
-  { key: 'updated', label: 'Updated', width: 120, maxWidth: 240, sortType: 'string' as const },
+  { key: 'code', label: 'Code', sortable: true, width: 72, maxWidth: 90, sortType: 'string' as const },
+  { key: 'description', label: 'Description', sortable: true, maxWidth: 100, sortType: 'string' as const },
+  { key: 'active', label: 'Active', sortable: true, width: 64, maxWidth: 76, sortType: 'string' as const },
+  { key: 'displayOrder', label: 'Display Order', sortable: true, maxWidth: 100, sortType: 'number' as const },
+  { key: 'operatorId', label: 'Operator ID', sortable: true, maxWidth: 100, sortType: 'string' as const },
+  { key: 'updated', label: 'Updated', sortable: true, width: 120, maxWidth: 240, sortType: 'string' as const },
 ];
 
 type Anchor = { code: string; ts: number } | null;
