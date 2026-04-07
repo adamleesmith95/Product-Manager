@@ -6,6 +6,7 @@ import { ColumnDefinition } from './shared/DataTable';
 import { resetTableColumns } from "../utils/tableStorage";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useBrowserData } from "../hooks/useBrowserData";
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
 
 type Category = {
   code: string;
@@ -526,6 +527,7 @@ export default function DisplayCategoryBrowser({
 
   useEffect(() => {
     const handler = (e: CustomEvent) => {
+            console.log('[DCB] go-back-to-categories-specific received', e.detail);
       const { categoryCode, categoryName, phcCode } = (e.detail ?? {}) as {
         categoryCode?: string;
         categoryName?: string;
@@ -552,6 +554,7 @@ export default function DisplayCategoryBrowser({
         setSelectedPhcCode(null);
       }
     };
+        
     window.addEventListener("go-back-to-categories-specific", handler as EventListener);
     return () =>
       window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
@@ -562,6 +565,7 @@ export default function DisplayCategoryBrowser({
 
   useEffect(() => {
     const handler = (e: Event) => {
+      
       const { categoryCode, categoryName, phcCode } = (e as CustomEvent).detail ?? {};
       if (!categoryCode) return;
       setSelectedCat(categoryCode);
@@ -749,7 +753,7 @@ export default function DisplayCategoryBrowser({
           >
             Go to Display Category
           </button>
-        </div>
+          </div>
       )}
     </>
   );

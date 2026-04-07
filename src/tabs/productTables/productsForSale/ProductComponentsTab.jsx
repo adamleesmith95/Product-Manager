@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import DualPane from '../../../components/shared/DualPane';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import { useModalSession } from '../../../context/ModalSessionContext';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -333,7 +334,11 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
             className="block w-full text-left px-3 py-2 hover:bg-blue-50"
             onClick={openModifyForAssignedSelection}
           >
-            Modify
+            <span className="flex items-center gap-2">
+              
+              <span>Modify</span>
+              <ArrowTopRightOnSquareIcon className="h-4 w-4 text-gray-500" />
+            </span>
           </button>
         </div>
       )}

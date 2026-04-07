@@ -8,6 +8,7 @@ import useLookup from '../../../hooks/useLookup';
 import { useFormSeed , asBoolean , asNumber} from '../../../hooks/useFormSeed';
 import EntityRelationViewerModal from '../../../components/shared/EntityRelationViewerModal';
 import { useEntityRelationViewer } from '../../../hooks/useEntityRelationViewer';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -202,7 +203,17 @@ function buildPhcActions(phcRow) {
   return [
     {
       key: 'open-phc-new-tab',
-      label: 'Open PHC In New Tab',
+      //label: 'Open PHC In New Tab',
+      
+label: (
+      <span className="flex items-center gap-2">
+        
+        <span>Go To Products for Sale</span>
+        <ArrowTopRightOnSquareIcon className="h-4 w-4 text-gray-500" />
+      </span>
+    ),
+
+      
       onClick: () => {
         const params = new URLSearchParams();
         if (categoryCode) params.set('focusCategoryCode', categoryCode);
