@@ -8,6 +8,7 @@ import PaneActions from './shared/PaneActions';
 import { useBrowserData } from '../hooks/useBrowserData';
 import { resetTableColumns } from '../utils/tableStorage';
 import RowContextMenu from './shared/RowContextMenu';
+import { newTabLabel } from './shared/contextMenuNavActions';
 
 const DISPLAY_CATEGORY_COLUMNS = [
   { key: 'code', label: 'Code', sortable: true, sortType: 'string' as const },
@@ -517,9 +518,25 @@ export default function DisplayCategorySearch({
                 setCtx(null);
               },
             },
-          ]}
+            {
+            key: 'goto-products-new-tab',
+            label: newTabLabel('Go to Products for Sale'),
+            onClick: () => {
+              const categoryCode = String(ctx.row?.code ?? ctx.row?.displayCategoryCode ?? '');
+              if (!categoryCode) return;
+              const params = new URLSearchParams();
+              params.set('focusCategoryCode', categoryCode);
+              params.set('navTs', String(Date.now()));
+              window.open('/product-manager/manage-products-for-sale?' + params.toString(), '_blank');
+              setCtx(null);
+            },
+          },
+            ]}
         />
       )}
+      
+
+
       {groupCtx && (
         <RowContextMenu
           x={groupCtx.x}
@@ -538,6 +555,19 @@ export default function DisplayCategorySearch({
               label: 'Go to Display Group',
               onClick: () => {
                 onGoToDisplayGroup?.(groupCtx.group);
+                setGroupCtx(null);
+              },
+            },
+            {
+              key: 'goto-display-group-new-tab',
+              label: newTabLabel('Go to Display Group'),
+              onClick: () => {
+                const groupCode = String(groupCtx.group?.groupCode ?? '');
+                if (!groupCode) return;
+                const params = new URLSearchParams();
+                params.set('focusGroupCode', groupCode);
+                params.set('navTs', String(Date.now()));
+                window.open('/product-manager/manage-display-group?' + params.toString(), '_blank');
                 setGroupCtx(null);
               },
             },

@@ -2,14 +2,10 @@ import React, { useEffect, useState } from 'react';
 import Modal from '../Modal';
 import DataTable, { ColumnDefinition } from './DataTable';
 import RowContextMenu from '../shared/RowContextMenu';
+import { RowAction } from './RowContextMenu';
 
 type RelationRow = Record<string, any> & { __rowId: string };
 
-type RowAction = {
-  key: string;
-  label: string;
-  onClick: () => void;
-};
 
 type Props = {
   open: boolean;

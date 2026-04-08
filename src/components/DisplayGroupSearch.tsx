@@ -7,6 +7,7 @@ import PaneActions from './shared/PaneActions';
 import SearchToolbar from './shared/SearchToolbar';
 import { resetTableColumns } from '../utils/tableStorage';
 import RowContextMenu from './shared/RowContextMenu';
+import { newTabLabel } from './shared/contextMenuNavActions';
 
 const TABLE_STORAGE_KEY = 'display-group-search';
 
@@ -32,6 +33,7 @@ type Props = {
   inlineDetailPanel?: ReactNode;
   groupAnchor?: Anchor;
 };
+  
 
 export default function DisplayGroupSearch({
   onOpenGroup,
@@ -248,6 +250,18 @@ export default function DisplayGroupSearch({
                 setGroupCtx(null);
               },
             },
+            { key: 'goto-display-category-new-tab',
+              label: newTabLabel('Go to Display Category'),
+              onClick: () => {
+                const groupCode = String(groupCtx.row?.code ?? groupCtx.row?.groupCode ?? '');
+                if (!groupCode) return;
+                const params = new URLSearchParams();
+                params.set('focusGroupCode', groupCode);
+                params.set('navTs', String(Date.now()));
+                window.open('/product-manager/manage-display-category?' + params.toString(), '_blank');
+                setGroupCtx(null);
+            },
+          },
           ]}
         />
       )}

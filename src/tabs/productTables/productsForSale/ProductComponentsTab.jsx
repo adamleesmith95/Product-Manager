@@ -2,7 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import DualPane from '../../../components/shared/DualPane';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import { useModalSession } from '../../../context/ModalSessionContext';
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
+import RowContextMenu from '../../../components/shared/RowContextMenu';
+import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -41,11 +42,6 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   // fetch once per modal session — won't re-fetch on tab switch
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-  const DEBUG_PC = true;
-  const log = (...args) => {
-    if (!DEBUG_PC) return;
-    console.log('[PC TAB]', ...args);
-  };
 
   const { data: componentData, loading } = useModalCachedFetch(
     `product-components-${productPhc}`,
@@ -326,21 +322,20 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     <div className="flex flex-col h-full min-h-0">
       {/* Context menu */}
       {menu.open && (
-        <div
-          className="fixed z-50 bg-white border-white rounded shadow-md text-sm"
-          style={{ left: menu.x, top: menu.y }}
-        >
-          <button
-            className="block w-full text-left px-3 py-2 hover:bg-blue-50"
-            onClick={openModifyForAssignedSelection}
-          >
-            <span className="flex items-center gap-2">
-              
-              <span>Modify</span>
-              <ArrowTopRightOnSquareIcon className="h-4 w-4 text-gray-500" />
-            </span>
-          </button>
-        </div>
+        <RowContextMenu
+          x={menu.x}
+          y={menu.y}
+          actions={[
+            {
+              key: 'modify-new-tab',
+              label: newTabLabel('Modify'),
+              onClick: () => {
+                openModifyForAssignedSelection();
+                setMenu(m => ({ ...m, open: false }));
+              },
+            },
+          ]}
+        />
       )}
 
       <DualPane

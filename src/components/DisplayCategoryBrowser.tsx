@@ -6,7 +6,9 @@ import { ColumnDefinition } from './shared/DataTable';
 import { resetTableColumns } from "../utils/tableStorage";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useBrowserData } from "../hooks/useBrowserData";
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
+import RowContextMenu from "./shared/RowContextMenu";
+import { newTabLabel } from "./shared/contextMenuNavActions";
+
 
 type Category = {
   code: string;
@@ -555,9 +557,9 @@ export default function DisplayCategoryBrowser({
       }
     };
         
-    window.addEventListener("go-back-to-categories-specific", handler as EventListener);
-    return () =>
-      window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
+    // window.addEventListener("go-back-to-categories-specific", handler as EventListener);
+    // return () =>
+    //   window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
 
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -631,6 +633,7 @@ export default function DisplayCategoryBrowser({
       window.removeEventListener('keydown', onEsc);
     };
   }, []);
+
 
   return (
     <>
@@ -730,31 +733,45 @@ export default function DisplayCategoryBrowser({
       />
 
       {catCtx && (
-        <div
-          className="fixed z-1000 min-w-45 rounded border border-gray-300 bg-white shadow-md"
-          style={{ left: catCtx.x, top: catCtx.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
-            onClick={() => {
-              onModifyCategory?.(catCtx.cat);
-              setCatCtx(null);
-            }}
-          >
-            Modify
-          </button>
-          <button
-            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
-            onClick={() => {
-              onGoToDisplayCategory?.(catCtx.cat);
-              setCatCtx(null);
-            }}
-          >
-            Go to Display Category
-          </button>
-          </div>
+        <RowContextMenu
+          x={catCtx.x}
+          y={catCtx.y}
+          actions={[
+            { key: 'modify',
+              label: 'Modify',
+              onClick: () => 
+                {
+                  onModifyCategory?.(catCtx.cat);
+                  setCatCtx(null);
+                }
+            },
+            { key: 'go-to-category',
+              label: 'Go to Display Category',
+              onClick: () => {
+                onGoToDisplayCategory?.(catCtx.cat);
+                setCatCtx(null);
+              }
+            },
+            { key: 'go-to-category-new-tab',
+              label: newTabLabel('Go To Display Category'),
+              onClick: () => {
+                const categoryCode = String(catCtx.cat?.code ?? '');
+                const groupCode = String(catCtx.cat?.groupCode ?? '');
+                if (!categoryCode) return;
+                const params = new URLSearchParams();
+                params.set('focusCategoryCode', categoryCode);
+                if (groupCode) params.set('focusGroupCode', groupCode);
+                params.set('navTs', String(Date.now()));
+                window.open('/product-manager/manage-display-category?' + params.toString(), '_blank');
+                setCatCtx(null);
+              }
+            },
+          ]}
+
+
+    />
       )}
     </>
   );
+
 }

@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
-import LabeledInput from '../../../components/LabeledInput';
 import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
-import { useFormSeed , asBoolean , asNumber} from '../../../hooks/useFormSeed';
+import { useFormSeed , asBoolean } from '../../../hooks/useFormSeed';
 import EntityRelationViewerModal from '../../../components/shared/EntityRelationViewerModal';
 import { useEntityRelationViewer } from '../../../hooks/useEntityRelationViewer';
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
+import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -204,14 +202,7 @@ function buildPhcActions(phcRow) {
     {
       key: 'open-phc-new-tab',
       //label: 'Open PHC In New Tab',
-      
-label: (
-      <span className="flex items-center gap-2">
-        
-        <span>Go To Products for Sale</span>
-        <ArrowTopRightOnSquareIcon className="h-4 w-4 text-gray-500" />
-      </span>
-    ),
+      label: newTabLabel('Go To Products for Sale'),
 
       
       onClick: () => {
