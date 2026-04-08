@@ -20,25 +20,19 @@ const COMPONENT_COLUMNS = [
   { key: 'product_profile_type', label: 'Product Profile Type', sortable: true },
   { key: 'deferral_pattern_code', label: 'Deferral Pattern Code', sortable: true },
   { key: 'deferral_pattern', label: 'Deferral Pattern', sortable: true },
-
   { key: 'units', label: 'Units', sortable: true },
   { key: 'revenue_report_ind', label: 'Report Revenue', sortable: true },
   { key: 'change_revenue_location_ind', label: 'Change Revenue Location', sortable: true },
   { key: 'sale_units', label: 'Sale Units', sortable: true },
- 
-  
   { key: 'inventory_pool_code', label: 'Inventory Pool Code', sortable: true },
   { key: 'inventory_pool', label: 'Inventory Pool', sortable: true },
   { key: 'offline_freesell_ind', label: 'Offline Freesell', sortable: true },
   { key: 'sales_statistic_code', label: 'Sales Statistic Code', sortable: true },
   { key: 'sales_statistic', label: 'Sales Statistic', sortable: true },
-
   { key: 'roster_code', label: 'Roster Code', sortable: true },
   { key: 'roster', label: 'Roster', sortable: true },
   { key: 'lift_product_type_code', label: 'Lift Product Type Code', sortable: true },
   { key: 'lift_product_type', label: 'Lift Product Type', sortable: true },
-  // Add these to COMPONENT_COLUMNS array:
-
   { key: 'scan_process_order_code', label: 'Scan Process Order Code', sortable: true },
   { key: 'scan_process_order', label: 'Scan Process Order', sortable: true },
   { key: 'lift_scan_type_code', label: 'Lift Scan Type Code', sortable: true },
@@ -49,7 +43,6 @@ const COMPONENT_COLUMNS = [
   { key: 'lift_expiration_type', label: 'Lift Expiration Type', sortable: true },
   { key: 'lift_expiration_days', label: 'Lift Expiration Days', sortable: true },
   { key: 'lift_expiration_date', label: 'Lift Expiration Date', sortable: true },
-  
   { key: 'lesson_product_type_code', label: 'Lesson Product Type Code', sortable: true },
   { key: 'lesson_product_type', label: 'Lesson Product Type', sortable: true },
   { key: 'lesson_discipline_code', label: 'Lesson Discipline Code', sortable: true },
@@ -57,17 +50,14 @@ const COMPONENT_COLUMNS = [
   { key: 'instructor_activity_code', label: 'Instructor Activity Code', sortable: true },
   { key: 'instructor_activity', label: 'Instructor Activity', sortable: true },
   { key: 'schedule_instructor', label: 'Schedule Instructor', sortable: true },
-  
   { key: 'pass_product_type_code', label: 'Pass Product Type Code', sortable: true },
   { key: 'pass_product_type', label: 'Pass Product Type', sortable: true },
   { key: 'pass_media_type_code', label: 'Pass Media Type Code', sortable: true },
   { key: 'pass_media_type', label: 'Pass Media Type', sortable: true },
-  
   { key: 'deferral_calendar_code', label: 'Deferral Calendar Code', sortable: true },
   { key: 'deferral_calendar', label: 'Deferral Calendar', sortable: true },
   { key: 'customer_property_set_code', label: 'Customer Property Set Code', sortable: true },
   { key: 'customer_property_set', label: 'Customer Property Set', sortable: true },
-
   { key: 'operator_id', label: 'Operator ID', sortable: true },
   { key: 'update_date', label: 'Updated', sortable: true },
 ];
@@ -82,6 +72,7 @@ interface Props {
   onClone?: () => void;
   newLabel?: string;
   cloneLabel?: string;
+  componentAnchorCode?: string;
 }
 
 export default function ProductComponentSearch({
@@ -92,13 +83,13 @@ export default function ProductComponentSearch({
   onClone,
   newLabel,
   cloneLabel,
+  componentAnchorCode,
 }: Props) {
   const [filters, setFilters] = useState({ pc: '', description: '' });
   const [tree, setTree] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCompCode, setSelectedCompCode] = useState('');
-  //const [loading, setLoading] = useState(false);
 
   const [searchTitle, setSearchTitle] = useState('');
   const isResultsMode = !!searchTitle?.trim();
@@ -110,9 +101,23 @@ export default function ProductComponentSearch({
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
-  const scrollRowIntoView = (code) => {
-    const el = document.getElementById(`pc-row-${code}`);
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const scrollRowIntoView = (code) => {
+  const target = String(code);
+  const selector =
+  'tr[data-table-key="product-component-search"][data-row-key="' + target + '"]';
+
+  const attempt = (attemptsLeft) => {
+  const el = document.querySelector(selector);
+  if (el) {
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return;
+  }
+  if (attemptsLeft > 0) {
+  setTimeout(() => attempt(attemptsLeft - 1), 100);
+  }
+  };
+
+  attempt(6);
   };
 
   const { cache, setCache } = useDataCache();
@@ -142,9 +147,39 @@ export default function ProductComponentSearch({
   useEffect(() => {
     if (pcTreeError) console.error('[PC Search] tree load failed', pcTreeError);
   }, [pcTreeError]);
-  
 
-   function toggleGroup(code) {
+// For opening new tab when modify button is clicked in Product Component tab under manage-products-for-sale
+useEffect(() => {
+  if (!componentAnchorCode || !tree.length) return;
+
+  const codeLower = componentAnchorCode.toLowerCase();
+  let found = null, foundGroup = null, foundCat = null;
+
+  outer: for (const g of tree) {
+    for (const cat of (g.categories ?? [])) {
+      for (const comp of (cat.components ?? [])) {
+        if (String(comp.code ?? '').toLowerCase() === codeLower) {
+          found = comp; foundGroup = g; foundCat = cat;
+          break outer;
+        }
+      }
+    }
+  }
+
+  if (!found || !foundCat || !foundGroup) return;
+
+  setExpandedGroups(prev => { const next = new Set(prev); next.add(foundGroup.groupCode); return next; });
+  setSelectedCategory(String(foundCat.categoryCode));
+  setSelectedCompCode(String(found.code));
+  onSelectProduct?.(found);
+  setPendingAnchorCompCode(String(found.code));
+  setTimeout(() => scrollCategoryIntoView(String(foundCat.categoryCode)), 0);
+}, [componentAnchorCode, tree]);
+
+
+
+
+  function toggleGroup(code) {
     setExpandedGroups(prev => {
       const next = new Set(prev);
       if (next.has(code)) next.delete(code);
@@ -215,8 +250,8 @@ export default function ProductComponentSearch({
 
       if (!found || !foundCat || !foundGroup) {
         setSelectedCompCode('');
-        setSearchTitle(`No results for code ${pc}`);
-        setResultRows([]);
+        setResultRows([{ code: '', label: `No component found for "${pc}"` }]);
+        setSearchTitle(`No results for "${pc}"`);
         return;
       }
 
@@ -229,6 +264,7 @@ export default function ProductComponentSearch({
       });
       setSelectedCategory(String(foundCat.categoryCode));
       setSelectedCompCode(String(found.code));
+      onSelectProduct?.(found);
       setPendingAnchorCompCode(String(found.code));
       setTimeout(() => scrollCategoryIntoView(String(foundCat.categoryCode)), 0);
       return;
@@ -279,31 +315,18 @@ export default function ProductComponentSearch({
     }
   }, [selectedCategory]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!pendingAnchorCompCode) return;
     requestAnimationFrame(() => {
-      setSelectedCompCode(pendingAnchorCompCode);
-      scrollRowIntoView(pendingAnchorCompCode);
+    const code = String(pendingAnchorCompCode);
+    setSelectedCompCode(code);
+    scrollRowIntoView(code);
+            const hit = components.find((c) => String(c?.code ?? '') === code);
+      if (hit) onSelectProduct?.(hit);
+
       setPendingAnchorCompCode(null);
     });
-  }, [pendingAnchorCompCode, components.length]);
-
-  const jumpToComponentCategory = (row) => {
-    const { categoryCode, groupCode, code } = row;
-    if (!categoryCode || !groupCode || !code) return;
-
-    setSearchTitle('');
-    setResultRows([]);
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      next.add(groupCode);
-      return next;
-    });
-    setSelectedCategory(String(categoryCode));
-    setSelectedCompCode(String(code));
-    setPendingAnchorCompCode(String(code));
-    setTimeout(() => scrollCategoryIntoView(String(categoryCode)), 0);
-  };
+  }, [pendingAnchorCompCode, components, onSelectProduct]);
 
   const headerTitle = isResultsMode
     ? searchTitle
@@ -318,13 +341,8 @@ export default function ProductComponentSearch({
     window.location.reload();
   };
 
-  const handleNew = () => {
-    // handle new component logic
-  };
-
-  const handleClone = () => {
-    // handle clone component logic
-  };
+  const handleNew = () => {};
+  const handleClone = () => {};
 
   const paneFooter = (
     <PaneActions
@@ -336,7 +354,12 @@ export default function ProductComponentSearch({
   );
 
   return (
-    <BrowserLayout
+    <div className="bg-white shadow-md rounded-md border border-gray-300 overflow-hidden">
+      <div className="flex items-center bg-indigo-950 px-4 py-2 rounded-t-md shrink-0">
+        <h2 className="text-white text-lg font-semibold">Product Component Search</h2>
+      </div>
+      <BrowserLayout
+        paneBottom={inlineDetailPanel}
       sidebar={
         <>
           <div className="pm-sidebar-title">Product Groups</div>
@@ -345,7 +368,7 @@ export default function ProductComponentSearch({
               const open = expandedGroups.has(group.groupCode);
               return (
                 <div key={group.groupCode} className="mb-2">
-                  <div className="pm-group-header">
+                  <div className="pm-group-header hover:bg-gray-50">
                     <button
                       type="button"
                       className="inline-flex items-center justify-center w-5 h-5 rounded border border-gray-200 bg-white hover:bg-gray-50 ml-1 shrink-0"
@@ -354,25 +377,26 @@ export default function ProductComponentSearch({
                     >
                       <span className="text-sm">{open ? '▾' : '▸'}</span>
                     </button>
-                    <span className="pm-group-label">{group.label}</span>
+                    <span className="pm-group-label " onClick={() => toggleGroup(group.groupCode)}>{group.label}</span>
                     <span className="pm-group-code">({group.groupCode})</span>
                   </div>
                   {open && (group.categories ?? []).map(cat => {
                     const selected = String(selectedCategory) === String(cat.categoryCode);
                     return (
-                      <button
-                        key={cat.categoryCode}
-                        id={`pc-cat-${cat.categoryCode}`}
-                        type="button"
-                        onClick={() => setCategoryAndResetSelection(String(cat.categoryCode))}
-                        className={`${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} pm-cat-indent block`}
-                        title={cat.label}
-                      >
-                        <div className="truncate">
-                          {cat.label}
-                          <span className="ml-2 text-[11px] text-neutral-500">({cat.categoryCode})</span>
-                        </div>
-                      </button>
+                      <div key={cat.categoryCode} className="pm-cat-indent">
+                        <button
+                          id={`pc-cat-${cat.categoryCode}`}
+                          type="button"
+                          onClick={() => setCategoryAndResetSelection(String(cat.categoryCode))}
+                          className={`${selected ? 'pm-list-item-small pm-list-item--active' : 'pm-list-item-small'} block`}
+                          title={cat.label}
+                        >
+                          <div className="truncate">
+                            {cat.label}
+                            <span className="ml-2 text-[11px] text-neutral-500">({cat.categoryCode})</span>
+                          </div>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -418,11 +442,11 @@ export default function ProductComponentSearch({
           loading={loading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row: any) => {
-            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            setSelectedCompCode(String(row.code ?? ''));
             onSelectProduct?.(row);
           }}
           onRowDoubleClick={(row: any) => {
-            setSelectedCompCode(String(row.code ?? ''));  // ADD THIS
+            setSelectedCompCode(String(row.code ?? ''));
             onOpenProduct?.(row);
           }}
           emptyMessage={
@@ -434,10 +458,11 @@ export default function ProductComponentSearch({
               ? searchTitle || 'Results (0)'
               : 'No components found'
           }
-          
         />
       }
-      paneFooter={paneFooter}
-    />
+        paneFooter={paneFooter}
+      />
+    </div>
   );
 }
+

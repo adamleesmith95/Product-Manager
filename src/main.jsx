@@ -10,6 +10,7 @@ import ManageDisplayCategory from './pages/ManageDisplayCategory';
 import AppShell from './layout/AppShell';
 import { routes } from './routes';
 
+
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element #root not found');
 

@@ -3,8 +3,8 @@ import DisplayCategorySearch from '../components/DisplayCategorySearch';
 import Modal from '../components/Modal';
 import ModalTabButton from '../components/shared/ModalTabButton';
 import { ModalSessionProvider } from '../context/ModalSessionContext';
-import DC_GeneralTab from '../tabs/DC_GeneralTab';
-import DG_GeneralTab from '../tabs/DG_GeneralTab';
+import DC_GeneralTab from '../tabs/productTables/displayCategory/DC_GeneralTab';
+import DG_GeneralTab from '../tabs/productTables/displayGroup/DG_GeneralTab';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 

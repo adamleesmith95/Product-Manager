@@ -2,6 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import DualPane from '../../../components/shared/DualPane';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import { useModalSession } from '../../../context/ModalSessionContext';
+import RowContextMenu from '../../../components/shared/RowContextMenu';
+import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -40,11 +42,6 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   // fetch once per modal session — won't re-fetch on tab switch
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-  const DEBUG_PC = true;
-  const log = (...args) => {
-    if (!DEBUG_PC) return;
-    console.log('[PC TAB]', ...args);
-  };
 
   const { data: componentData, loading } = useModalCachedFetch(
     `product-components-${productPhc}`,
@@ -305,11 +302,17 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       : [];
 
     if (!targets.length) return;
-
-    alert(
-      `Modify… for ${targets.length} component(s).\n\n${targets
-        .map((t) => `${t.component_desc} (${t.component_code})`)
-        .join('\n')}`
+// replaced 4/2/26 AS with the below stub (actual implementation for "Modify" action)
+    // alert(
+    //   `Modify… for ${targets.length} component(s).\n\n${targets
+    //     .map((t) => `${t.component_desc} (${t.component_code})`)
+    //     .join('\n')}`
+    // );
+//replacement here: open a new window/tab to the component management page, passing the first selected component code as a query param for focus (actual implementation TBD)
+        const code = targets[0].component_code;
+    window.open(
+      `/product-manager/manage-product-component?focusComponentCode=${encodeURIComponent(code)}`,
+      '_blank'
     );
   }
 
@@ -319,17 +322,20 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     <div className="flex flex-col h-full min-h-0">
       {/* Context menu */}
       {menu.open && (
-        <div
-          className="fixed z-50 bg-white border-white rounded shadow-md text-sm"
-          style={{ left: menu.x, top: menu.y }}
-        >
-          <button
-            className="block w-full text-left px-3 py-2 hover:bg-blue-50"
-            onClick={openModifyForAssignedSelection}
-          >
-            Modify
-          </button>
-        </div>
+        <RowContextMenu
+          x={menu.x}
+          y={menu.y}
+          actions={[
+            {
+              key: 'modify-new-tab',
+              label: newTabLabel('Modify'),
+              onClick: () => {
+                openModifyForAssignedSelection();
+                setMenu(m => ({ ...m, open: false }));
+              },
+            },
+          ]}
+        />
       )}
 
       <DualPane

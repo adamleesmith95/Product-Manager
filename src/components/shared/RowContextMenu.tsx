@@ -2,7 +2,7 @@ import React from 'react';
 
 export type RowAction = {
   key: string;
-  label: string;
+  label: React.ReactNode;
   onClick: () => void;
 };
 

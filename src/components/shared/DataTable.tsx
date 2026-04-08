@@ -189,32 +189,37 @@ export function DataTable<T>(props: DataTableProps<T>) {
           </tr>
         </thead>
         <tbody>
-          {data.map((row, idx) => (
-            <tr
-              key={String(row[rowKey] ?? idx)}
-              className={`pm-row ${selectedRowKey != null && String(selectedRowKey) === String(row[rowKey] ?? idx) ? 'pm-row--selected' : ''} ${
-                onRowClick || onRowDoubleClick ? 'cursor-pointer' : ''
-              }`}
-              onClick={() => onRowClick?.(row)}
-              onDoubleClick={() => onRowDoubleClick?.(row)}
-              onContextMenu={(e) => {
-                onRowContextMenu?.(row, e);
-              }}
-            >
-              {columns.map((col) => {
-                const value = row[col.key] as unknown;
-                const alignClass =
-                  col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
-                const cellClassName = `pm-td ${alignClass} ${col.className || ''}`.trim();
+          {sortedData.map((row, idx) => {
+const resolvedRowKey = String(row[rowKey] ?? idx);
 
-                return (
-                  <td key={String(col.key)} className={cellClassName}>
-                    {col.render ? col.render(value, row) : formatCellValue(value)}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+            return (
+            <tr
+            key={resolvedRowKey}
+            id={storageKey + '-row-' + resolvedRowKey}
+            data-row-key={resolvedRowKey}
+            data-table-key={storageKey}
+            className={'pm-row ' + (selectedRowKey != null && String(selectedRowKey) === resolvedRowKey ? 'pm-row--selected' : '') + ' ' + ((onRowClick || onRowDoubleClick) ? 'cursor-pointer' : '')}
+            onClick={() => onRowClick?.(row)}
+            onDoubleClick={() => onRowDoubleClick?.(row)}
+            onContextMenu={(e) => {
+            onRowContextMenu?.(row, e);
+            }}
+            >
+            {columns.map((col) => {
+            const value = row[col.key] as unknown;
+            const alignClass =
+            col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '';
+            const cellClassName = ('pm-td ' + alignClass + ' ' + (col.className || '')).trim();
+
+                    return (
+              <td key={String(col.key)} className={cellClassName}>
+                {col.render ? col.render(value, row) : formatCellValue(value)}
+              </td>
+            );
+          })}
+        </tr>
+          );
+        })}
         </tbody>
       </table>
       {loading && (

@@ -8,12 +8,23 @@ import PropertiesTab from './tabs/productTables/productsForSale/PropertiesTab.js
 import LinkedProductsTab from './tabs/productTables/productsForSale/LinkedProductsTab';
 import CommentsTab from './tabs/productTables/productsForSale/CommentsTab';
 import SaleLocationsTab from './tabs/productTables/productsForSale/SaleLocationsTab';
+import PromptsTab from './tabs/productTables/productsForSale/PromptsTab';
 import ProductComponentsTab from './tabs/productTables/productsForSale/ProductComponentsTab';
 import AccountingTab from './tabs/productTables/productsForSale/AccountingTab';
 import ProductPricingTab from './tabs/productTables/productsForSale/ProductPricingTab';
+import AutoRenewTab from './tabs/productTables/productsForSale/AutoRenewTab';
+import DisplayCategoryGroupingTab from './tabs/productTables/productsForSale/DisplayCategoryGroupingTab';
+import SalesModulesTab from './tabs/productTables/productsForSale/SalesModulesTab';
+import AttributesTab from './tabs/productTables/productsForSale/AttributesTab';
 
-const topTabs = ['General', 'Properties', 'Linked Products', 'Comments'];
-const bottomTabs = ['Sale Locations', 'Product Components', 'Accounting', 'Product Pricing'];
+const topTabs = ['General', 'Locations' , 'Components', 'Accounting' , 'Pricing' , 'Prompts' , 
+  'Properties', 'LinkedPHC', 'Comments' , 'AutoRenew' , 'Grouping' , 'Modules', //'AutoApplied' , 
+  'Attributes'];
+
+
+//const topTabs = ['General', 'Sale Locations' , 'Product Components', 'Accounting' , 'Product Pricing' , 'Prompts' ,  'Properties',
+//  'Linked Products', 'Comments' , 'Auto-Renew' , 'Display Category Grouping' , 'Sales Modules', //'Auto Applied' ,
+//   'Attributes'];
 
 function initFormFromProduct(product) {
   const S = (v) => v ?? '';
@@ -105,9 +116,7 @@ export default function ManageProductsForSale({ product, onClose }) {
     return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
   });
 
-  const [topTab, setTopTab]       = useState(() => tabForms['topTab']    ?? 'General');
-  const [bottomTab, setBottomTab] = useState(() => tabForms['bottomTab'] ?? 'Sale Locations');
-  const [section, setSection]     = useState(() => tabForms['section']   ?? 'primary');
+  const [topTab, setTopTab] = useState('General');
 
   // Reset form when product changes
   useEffect(() => {
@@ -120,9 +129,8 @@ export default function ManageProductsForSale({ product, onClose }) {
   }, [productKey]);
 
   // Persist active tab state
-  useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
-  useEffect(() => setTabForm('bottomTab', bottomTab), [bottomTab]);
-  useEffect(() => setTabForm('section',   section),   [section]);
+  //useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
+
 
     const update = (key, value) => {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -154,6 +162,20 @@ export default function ManageProductsForSale({ product, onClose }) {
     const key = `product-components-${phc}`;
     if (getDataCache(key)) return;
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      fetch(`${API_BASE}/api/components/tree`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) setDataCache(treeKey, data); })
+        .catch(() => {});
+    }, []); // empty deps — once on mount
+
+
+        // Prefetch components tree (once per session — safety net for direct double-click)
+    useEffect(() => {
+      const treeKey = 'components-tree';
+      if (getDataCache(treeKey)) return;
+      
+
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
     fetch(`${API_BASE}/api/products/${phc}/components`)
       .then((r) => (r.ok ? r.json() : []))
@@ -170,68 +192,42 @@ export default function ManageProductsForSale({ product, onClose }) {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden p-4 gap-3">
-      <div role="tablist" className="shrink-0">
-        <div className="pm-tab-row">
-          {topTabs.map((tab) => (
-            <ModalTabButton
-              key={tab}
-              active={topTab === tab && section === 'primary'}
-              onClick={() => { setSection('primary'); setTopTab(tab); }}
-            >
-              {tab}
-            </ModalTabButton>
-          ))}
-        </div>
-        <div className="pm-tab-row pt-1">
-          {bottomTabs.map((tab) => (
-            <ModalTabButton
-              key={tab}
-              active={bottomTab === tab && section === 'module'}
-              onClick={() => { setSection('module'); setBottomTab(tab); }}
-            >
-              {tab}
-            </ModalTabButton>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
-        {section === 'primary' ? (
-          <div className="h-full min-h-0 overflow-auto p-4">
-            {topTab === 'General'         && <GeneralTab form={form} update={update} />}
-            {topTab === 'Properties'      && <PropertiesTab form={form} update={update} />}
-            {topTab === 'Linked Products' && <LinkedProductsTab form={form} update={update} />}
-            {topTab === 'Comments'        && <CommentsTab form={form} update={update} />}
-          </div>
-        ) : (
-          <div className="h-full min-h-0 overflow-hidden">
-            {bottomTab === 'Sale Locations' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <SaleLocationsTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-            {bottomTab === 'Product Components' && (
-              <div className="h-full min-h-0 overflow-hidden p-4">
-                <ProductComponentsTab
-                  productPhc={phc}
-                  onComponentsChanged={() => {}}
-                />
-              </div>
-            )}
-            {bottomTab === 'Accounting' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <AccountingTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-            {bottomTab === 'Product Pricing' && (
-              <div className="h-full min-h-0 overflow-auto p-4">
-                <ProductPricingTab form={form} update={update} productPhc={phc} />
-              </div>
-            )}
-          </div>
-        )}
+  <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div role="tablist" className="shrink-0">
+      <div className="pm-tab-row">
+        {topTabs.map((tab) => (
+          <ModalTabButton
+            key={tab}
+            active={topTab === tab}
+            onClick={() => setTopTab(tab)}
+          >
+            {tab}
+          </ModalTabButton>
+        ))}
       </div>
     </div>
-  );
+
+    <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-md shadow-sm border border-gray-200">
+      <div className="h-full min-h-0 overflow-auto p-4">
+       {(topTab === 'General') && <GeneralTab form={form} update={update} />}
+      {(topTab === 'Locations' || topTab === 'Sale Locations') && <SaleLocationsTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Components' || topTab === 'Product Components') && (
+        <div className="h-full min-h-0 overflow-hidden">
+          <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
+        </div>
+      )}
+      {(topTab === 'Accounting') && <AccountingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Properties') && <PropertiesTab form={form} update={update} />}
+      {(topTab === 'LinkedPHC') && <LinkedProductsTab form={form} update={update} />}
+      {(topTab === 'Comments') && <CommentsTab form={form} update={update} />}
+      {(topTab === 'Prompts') && <PromptsTab form={form} update={update} />}
+      {(topTab === 'AutoRenew' && <AutoRenewTab form={form} update={update} />)}
+      {(topTab === 'Grouping') && <DisplayCategoryGroupingTab form={form} update={update} />}
+      {(topTab === 'Modules') && <SalesModulesTab form={form} update={update} />}
+      {(topTab === 'Attributes') && <AttributesTab form={form} update={update} />}
+      </div>
+    </div>
+  </div>
+);
 }

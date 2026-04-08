@@ -34,8 +34,8 @@ function bindSelect(baseKey, options) {
 
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Left Column */}
         <div className="space-y-4">
           <LabeledInput
@@ -194,7 +194,7 @@ function bindSelect(baseKey, options) {
             />
           </div>
         </div>
-      </div>
+      
     </div>
   );
 }

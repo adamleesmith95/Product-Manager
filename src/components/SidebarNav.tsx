@@ -99,14 +99,14 @@ export default function SidebarNav() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  const toggle = (key: string) =>
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  //const toggle = (key: string) =>
+    //setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const isGroupOpen = (key: string) => !!expanded[key];
 
   const toggleGroup = (key: string) => {
     // keep active parent open
-    if (isGroupOpen(key)) return;
+    //if (isGroupOpen(key)) return;
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 

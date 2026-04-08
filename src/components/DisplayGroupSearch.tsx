@@ -7,16 +7,17 @@ import PaneActions from './shared/PaneActions';
 import SearchToolbar from './shared/SearchToolbar';
 import { resetTableColumns } from '../utils/tableStorage';
 import RowContextMenu from './shared/RowContextMenu';
+import { newTabLabel } from './shared/contextMenuNavActions';
 
 const TABLE_STORAGE_KEY = 'display-group-search';
 
 const COLUMNS = [
-  { key: 'code', label: 'Code', width: 72, maxWidth: 90, sortType: 'string' as const },
-  { key: 'description', label: 'Description', maxWidth: 100, sortType: 'string' as const },
-  { key: 'active', label: 'Active', width: 64, maxWidth: 76, sortType: 'string' as const },
-  { key: 'displayOrder', label: 'Display Order', maxWidth: 100, sortType: 'number' as const },
-  { key: 'operatorId', label: 'Operator ID', maxWidth: 100, sortType: 'string' as const },
-  { key: 'updated', label: 'Updated', width: 120, maxWidth: 240, sortType: 'string' as const },
+  { key: 'code', label: 'Code', sortable: true, width: 72, maxWidth: 90, sortType: 'string' as const },
+  { key: 'description', label: 'Description', sortable: true, maxWidth: 100, sortType: 'string' as const },
+  { key: 'active', label: 'Active', sortable: true, width: 64, maxWidth: 76, sortType: 'string' as const },
+  { key: 'displayOrder', label: 'Display Order', sortable: true, maxWidth: 100, sortType: 'number' as const },
+  { key: 'operatorId', label: 'Operator ID', sortable: true, maxWidth: 100, sortType: 'string' as const },
+  { key: 'updated', label: 'Updated', sortable: true, width: 120, maxWidth: 240, sortType: 'string' as const },
 ];
 
 type Anchor = { code: string; ts: number } | null;
@@ -32,6 +33,7 @@ type Props = {
   inlineDetailPanel?: ReactNode;
   groupAnchor?: Anchor;
 };
+  
 
 export default function DisplayGroupSearch({
   onOpenGroup,
@@ -126,12 +128,8 @@ export default function DisplayGroupSearch({
 
     const attemptScroll = (attemptsLeft: number) => {
       const selectors = [
-        `[data-row-key="${code}"]`,
-        `[data-key="${code}"]`,
-        `[data-id="${code}"]`,
-        `tr.pm-row--selected`,
-        `tr.pm-row-selected`,
-        `tr.selected`,
+      'tr[data-table-key="display-group-search"][data-row-key="' + code + '"]',
+      'tr[data-table-key="display-group-search"].pm-row--selected',
       ];
 
       for (const sel of selectors) {
@@ -252,6 +250,18 @@ export default function DisplayGroupSearch({
                 setGroupCtx(null);
               },
             },
+            { key: 'goto-display-category-new-tab',
+              label: newTabLabel('Go to Display Category'),
+              onClick: () => {
+                const groupCode = String(groupCtx.row?.code ?? groupCtx.row?.groupCode ?? '');
+                if (!groupCode) return;
+                const params = new URLSearchParams();
+                params.set('focusGroupCode', groupCode);
+                params.set('navTs', String(Date.now()));
+                window.open('/product-manager/manage-display-category?' + params.toString(), '_blank');
+                setGroupCtx(null);
+            },
+          },
           ]}
         />
       )}

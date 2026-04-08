@@ -31,6 +31,23 @@ app.use('/api', displayCategoriesRoutes);
 app.use('/api/display-groups', displayGroupsRoutes);
 app.use('/api', lookupProductsRoutes);
 
+const path = require("path");
+
+// React build output (at project root)
+const clientDistPath = path.join(__dirname, "../dist");
+
+// Serve static files
+app.use(express.static(clientDistPath));
+
+// SPA fallback — FINAL middleware (no route pattern)
+app.use((req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"));
+});
+
+
+
 /** Start server */
 const port = parseInt(process.env.PORT, 10) || 3001;
-app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+app.listen(port, () =>
+  console.log(`API listening on http://localhost:${port}`)
+);

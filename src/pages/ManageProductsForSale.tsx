@@ -4,9 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import DisplayCategoryBrowser from '../components/DisplayCategoryBrowser';
 import ManageProductsForSaleLegacy from '../ManageProductsForSale.jsx';
 import Modal from '../components/Modal';
-import { ModalSessionProvider } from '../context/ModalSessionContext';
+import { ModalSessionProvider, useModalSession } from '../context/ModalSessionContext';
 import ModalTabButton from '../components/shared/ModalTabButton';
-import DC_GeneralTab from '../tabs/DC_GeneralTab';
+import DC_GeneralTab from '../tabs/productTables/displayCategory/DC_GeneralTab';
 import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
 
 type ProductRow = {
@@ -23,7 +23,34 @@ type ProductRow = {
 type DetailState = { open: boolean; product?: ProductRow };
 type DC_DetailState = { open: boolean; code: string | null; description?: string };
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+function PrefetchWarmup({ phcCode }: { phcCode: string }) {
+  const { getDataCache, setDataCache } = useModalSession();
+  useEffect(() => {
+    // Warm the components tree once per session
+    const treeKey = 'components-tree';
+    if (!getDataCache(treeKey)) {
+      fetch(`${API_BASE}/api/components/tree`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) setDataCache(treeKey, data); })
+        .catch(() => {});
+    }
+    // Warm assigned components for the hovered/clicked PHC
+    if (!phcCode) return;
+    const compKey = `product-components-${phcCode}`;
+    if (!getDataCache(compKey)) {
+      fetch(`${API_BASE}/api/products/${phcCode}/components`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) setDataCache(compKey, data); })
+        .catch(() => {});
+    }
+  }, [phcCode]);
+  return null;
+}
+
 export default function ManageProductsForSalePage() {
+  const [prefetchPhcCode, setPrefetchPhcCode] = useState('');
   const [detail, setDetail] = useState<{ open: boolean; product?: ProductRow }>({ open: false, product: undefined });
   const [dcDetail, setDcDetail] = useState<DC_DetailState>({ open: false, code: null, description: '' });
   const navigate = useNavigate();
@@ -35,24 +62,76 @@ export default function ManageProductsForSalePage() {
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const qsCode = String(qs.get('focusCategoryCode') ?? '');
+    const qsPhc = String(qs.get('focusPhcCode') ?? '');
     const qsTs = Number(qs.get('navTs') ?? Date.now());
     const qsOpen = qs.get('openCategoryModal');
 
     const state: any = location.state ?? {};
     const stateCode = String(state.focusCategoryCode ?? '');
+    const statePhc = String(state.focusPhcCode ?? '');
     const stateOpen = Boolean(state.openCategoryModal);
 
     const focusCategoryCode = qsCode || stateCode;
+    const focusPhcCode = qsPhc || statePhc;
     const navTs = Number.isFinite(qsTs) ? qsTs : Date.now();
     const openCategoryModal = qsOpen != null ? qsOpen === 'true' : stateOpen; // ADD
 
-    if (!focusCategoryCode) {
-      console.log('[MPFS] no focusCategoryCode; skipping');
+        if (!focusCategoryCode && !focusPhcCode) {
+      console.log('[MPFS] no focusCategoryCode or focusPhcCode; skipping');
+      return;
+    }
+    
+    // If we have a PHC code but no category, look it up
+    if (!focusCategoryCode && focusPhcCode) {
+      console.log('[MPFS] no focusCategoryCode — fetching from PHC', focusPhcCode);
+      navigate(location.pathname, { replace: true, state: {} });
+      fetch(`/api/products?code=${encodeURIComponent(focusPhcCode)}&expandCategory=true`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          const catCode = String(data?.anchorCategory ?? '');
+          console.log('[MPFS] resolved category from PHC', { focusPhcCode, catCode });
+          if (!catCode) return;
+          setCategoryAnchor({ code: catCode, ts: navTs });
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('go-back-to-categories-specific', {
+                detail: { categoryCode: catCode, phcCode: focusPhcCode },
+              })
+            );
+          }, 120);
+        })
+        .catch((err) => console.error('[MPFS] failed to resolve PHC category', err));
       return;
     }
 
-    console.log('[MPFS] applying anchor', { focusCategoryCode, navTs, openCategoryModal });
+    console.log('[MPFS] applying anchor', { focusCategoryCode, focusPhcCode, navTs, openCategoryModal });
     setCategoryAnchor({ code: focusCategoryCode, ts: navTs });
+
+        if (focusPhcCode) {
+      const payload = {
+        categoryCode: focusCategoryCode,
+        phcCode: focusPhcCode,
+      };
+    
+      let attempts = 0;
+      const maxAttempts = 6;
+    
+      const fire = () => {
+        attempts += 1;
+        console.log('[MPFS] dispatch go-back-to-categories-specific', { payload, attempts });
+    
+        window.dispatchEvent(
+          new CustomEvent('go-back-to-categories-specific', { detail: payload })
+        );
+    
+        if (attempts < maxAttempts) {
+          setTimeout(fire, 120);
+        }
+      };
+    
+      // Start after initial mount settles
+      setTimeout(fire, 120);
+    }
 
     if (openCategoryModal) {
       setDcDetail({
@@ -137,61 +216,65 @@ export default function ManageProductsForSalePage() {
     });
   };
 
-  return (
-    <>
-      {/* Surface the modal should cover, edge-to-edge */}
-      <div id="phc-surface" className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
-        <DisplayCategoryBrowser
-          onOpenProduct={handleOpenProduct}
-          onModifyCategory={handleModifyCategory}
-          onGoToDisplayCategory={handleGoToDisplayCategory}
-          initialCategoryCode={initialCategoryCode}
-          categoryAnchor={categoryAnchor}
-        />
-
-        {/* Full-bleed modal that covers ONLY the PH header surface */}
-      </div>
-
-      <Modal
-        open={detail.open}
-        onClose={handleClose}
-        title={detail.product ? `Manage Product — ${detail.product.description} (${detail.product.code})` : 'Manage Product'}
-        headerClassName="pcphc-modal-header"
-        titleClassName="pcphc-modal-title"
-        panelClassName="pcphc-modal-panel"
-      >
-        <ModalSessionProvider>   {/* NEW — wraps modal content only */}
+    return (
+    <ModalSessionProvider>
+      <PrefetchWarmup phcCode={prefetchPhcCode} />
+      <>
+        <div id="phc-surface" className="bg-white shadow-md rounded-md mb-4 border border-gray-300">
+          <DisplayCategoryBrowser
+            onOpenProduct={handleOpenProduct}
+            onModifyCategory={handleModifyCategory}
+            onGoToDisplayCategory={handleGoToDisplayCategory}
+            initialCategoryCode={initialCategoryCode}
+            categoryAnchor={categoryAnchor}
+            onPhcRowClick={(row) => setPrefetchPhcCode(String(row.code))}
+          />
+        </div>
+  
+        <Modal
+          open={detail.open}
+          onClose={handleClose}
+          title={
+            detail.product
+              ? `Manage Product — ${detail.product.description} (${detail.product.code})`
+              : 'Manage Product'
+          }
+          headerClassName="pcphc-modal-header"
+          titleClassName="pcphc-modal-title"
+          panelClassName="pcphc-modal-panel"
+        >
+          {/* ModalSessionProvider removed — uses the outer one above */}
           <ManageProductsForSaleLegacy
             product={detail.product}
             onClose={handleClose}
           />
-        </ModalSessionProvider>
-      </Modal>
-
-      <Modal
-        open={dcDetail.open}
-        onClose={() => setDcDetail((s) => ({ ...s, open: false }))}
-        title={
-          dcDetail.code
-            ? `Manage Display Category — ${dcDetail.description || 'Category'} (${dcDetail.code})`
-            : 'Manage Display Category'
-        }
-        headerClassName="pcphc-modal-header"
-        titleClassName="pcphc-modal-title"
-        panelClassName="pcphc-modal-panel"
-        onSave={() => {}}
-      >
-        <ModalSessionProvider>
-          <div className="pm-tab-host">
-            <div className="pm-tabs-row">
-              <ModalTabButton active onClick={() => {}}>General</ModalTabButton>
+        </Modal>
+  
+        <Modal
+          open={dcDetail.open}
+          onClose={() => setDcDetail((s) => ({ ...s, open: false }))}
+          title={
+            dcDetail.code
+              ? `Manage Display Category — ${dcDetail.description || 'Category'} (${dcDetail.code})`
+              : 'Manage Display Category'
+          }
+          headerClassName="pcphc-modal-header"
+          titleClassName="pcphc-modal-title"
+          panelClassName="pcphc-modal-panel"
+          onSave={() => {}}
+        >
+          <ModalSessionProvider>  {/* DC modal keeps its own isolated scope */}
+            <div className="pm-tab-host">
+              <div className="pm-tabs-row">
+                <ModalTabButton active onClick={() => {}}>General</ModalTabButton>
+              </div>
+              <div className="pm-tab-body pm-form-shell">
+                <DC_GeneralTab categoryCode={dcDetail.code} isActive />
+              </div>
             </div>
-            <div className="pm-tab-body pm-form-shell">
-              <DC_GeneralTab categoryCode={dcDetail.code} isActive />
-            </div>
-          </div>
-        </ModalSessionProvider>
-      </Modal>
-    </>
+          </ModalSessionProvider>
+        </Modal>
+      </>
+    </ModalSessionProvider>
   );
 }

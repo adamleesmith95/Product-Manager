@@ -6,6 +6,9 @@ import { ColumnDefinition } from './shared/DataTable';
 import { resetTableColumns } from "../utils/tableStorage";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useBrowserData } from "../hooks/useBrowserData";
+import RowContextMenu from "./shared/RowContextMenu";
+import { newTabLabel } from "./shared/contextMenuNavActions";
+
 
 type Category = {
   code: string;
@@ -83,6 +86,7 @@ interface DisplayCategoryBrowserProps {
   onOpenProduct: (product: ProductRow) => void;
   onModifyCategory?: (row: any) => void;
   onGoToDisplayCategory?: (row: any) => void;
+  onPhcRowClick?: (row: ProductRow) => void;  // NEW
   categoryAnchor?: { code: string; ts: number } | null;
 }
 
@@ -149,6 +153,7 @@ export default function DisplayCategoryBrowser({
   onOpenProduct,
   onModifyCategory,
   onGoToDisplayCategory,
+  onPhcRowClick,          // NEW
   categoryAnchor = null,
 }: DisplayCategoryBrowserProps) {
   const [pendingAnchorCode, setPendingAnchorCode] = useState<string | null>(null);
@@ -242,10 +247,26 @@ export default function DisplayCategoryBrowser({
     if (catsError) console.error("Failed to load display categories", catsError);
   }, [catsError]);
 
-  const scrollRowIntoView = (code: string) => {
-    const el = document.getElementById(`phc-row-${code}`);
-    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const scrollRowIntoView = (code: string) => {
+  const target = String(code);
+  const selector =
+  'tr[data-table-key="display-category-browser"][data-row-key="' + target + '"]';
+
+  const attempt = (attemptsLeft: number) => {
+  const el = document.querySelector(selector) as HTMLElement | null;
+  if (el) {
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return;
+  }
+  if (attemptsLeft > 0) {
+  setTimeout(() => attempt(attemptsLeft - 1), 100);
+  }
   };
+
+  attempt(6);
+  };
+
+
 
   const scrollCategoryIntoView = (categoryCode: string) => {
     const el = document.getElementById(`cat-${categoryCode}`);
@@ -307,6 +328,13 @@ export default function DisplayCategoryBrowser({
         if (!pendingAnchorCode) setSelectedPhcCode(null);
         setInlineCode("");
         setInlineDesc("");
+
+
+                console.log('[DCB] applying pendingAnchorCode after rows load', {
+          pendingAnchorCode,
+          selectedCat,
+          rowCount: recs.length,
+        });
 
         const cat = cats.find((c) => c.code === selectedCat);
         if (cat) {
@@ -494,12 +522,14 @@ export default function DisplayCategoryBrowser({
       setInlineCode("");
       setInlineDesc("");
     };
+    
     window.addEventListener("go-back-to-categories", handler);
     return () => window.removeEventListener("go-back-to-categories", handler);
   }, [lastCatCode, lastCatName]);
 
   useEffect(() => {
     const handler = (e: CustomEvent) => {
+            console.log('[DCB] go-back-to-categories-specific received', e.detail);
       const { categoryCode, categoryName, phcCode } = (e.detail ?? {}) as {
         categoryCode?: string;
         categoryName?: string;
@@ -526,14 +556,18 @@ export default function DisplayCategoryBrowser({
         setSelectedPhcCode(null);
       }
     };
-    window.addEventListener("go-back-to-categories-specific", handler as EventListener);
-    return () =>
-      window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
+        
+    // window.addEventListener("go-back-to-categories-specific", handler as EventListener);
+    // return () =>
+    //   window.removeEventListener("go-back-to-categories-specific", handler as EventListener);
+
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const handler = (e: Event) => {
+      
       const { categoryCode, categoryName, phcCode } = (e as CustomEvent).detail ?? {};
       if (!categoryCode) return;
       setSelectedCat(categoryCode);
@@ -599,6 +633,7 @@ export default function DisplayCategoryBrowser({
       window.removeEventListener('keydown', onEsc);
     };
   }, []);
+
 
   return (
     <>
@@ -677,7 +712,10 @@ export default function DisplayCategoryBrowser({
             rowKey="code"
             storageKey="display-category-browser"
             selectedRowKey={selectedPhcCode}
-            onRowClick={(row) => setSelectedPhcCode(row.code)}
+            onRowClick={(row) => {
+              setSelectedPhcCode(row.code);
+              onPhcRowClick?.(row);
+            }}
             onRowDoubleClick={(row) => {
               setSelectedPhcCode(null);
               onOpenProduct?.(row);
@@ -690,36 +728,50 @@ export default function DisplayCategoryBrowser({
           <>
             <button className="btn btn-light">New</button>
             <button className="btn btn-light">Clone</button>
-          </>
+          </> 
         }
       />
 
       {catCtx && (
-        <div
-          className="fixed z-[1000] min-w-[180px] rounded border border-gray-300 bg-white shadow-md"
-          style={{ left: catCtx.x, top: catCtx.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
-            onClick={() => {
-              onModifyCategory?.(catCtx.cat);
-              setCatCtx(null);
-            }}
-          >
-            Modify
-          </button>
-          <button
-            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
-            onClick={() => {
-              onGoToDisplayCategory?.(catCtx.cat);
-              setCatCtx(null);
-            }}
-          >
-            Go to Display Category
-          </button>
-        </div>
+        <RowContextMenu
+          x={catCtx.x}
+          y={catCtx.y}
+          actions={[
+            { key: 'modify',
+              label: 'Modify',
+              onClick: () => 
+                {
+                  onModifyCategory?.(catCtx.cat);
+                  setCatCtx(null);
+                }
+            },
+            { key: 'go-to-category',
+              label: 'Go to Display Category',
+              onClick: () => {
+                onGoToDisplayCategory?.(catCtx.cat);
+                setCatCtx(null);
+              }
+            },
+            { key: 'go-to-category-new-tab',
+              label: newTabLabel('Go To Display Category'),
+              onClick: () => {
+                const categoryCode = String(catCtx.cat?.code ?? '');
+                const groupCode = String(catCtx.cat?.groupCode ?? '');
+                if (!categoryCode) return;
+                const params = new URLSearchParams();
+                params.set('focusCategoryCode', categoryCode);
+                if (groupCode) params.set('focusGroupCode', groupCode);
+                params.set('navTs', String(Date.now()));
+                window.open('/product-manager/manage-display-category?' + params.toString(), '_blank');
+                setCatCtx(null);
+              }
+            },
+          ]}
+
+
+    />
       )}
     </>
   );
+
 }

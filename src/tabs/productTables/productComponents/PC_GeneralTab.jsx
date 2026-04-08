@@ -1,10 +1,12 @@
-import React from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
-import LabeledInput from '../../../components/LabeledInput';
 import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
+import { useFormSeed , asBoolean } from '../../../hooks/useFormSeed';
+import EntityRelationViewerModal from '../../../components/shared/EntityRelationViewerModal';
+import { useEntityRelationViewer } from '../../../hooks/useEntityRelationViewer';
+import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 
 const EMPTY = {
   productCode: null, description: '', productCategory: '',
@@ -12,6 +14,15 @@ const EMPTY = {
   salesUnits: '', active: '', display: '', changeRevenueLocation: '',
   paymentDate: '', reference: '', deferralPattern: '', operatorId: '', updateDate: '',
 };
+
+const PHC_COLUMNS = [
+  { key: 'productHeaderCode', label: 'Product Header Code', width: 100, minWidth: 40, className: 'whitespace-nowrap' },
+  { key: 'productHeaderDescription', label: 'Product Header Description', width: 200, minWidth: 100, className: 'whitespace-nowrap' },
+  { key: 'productHeaderActive', label: 'Product Header Active', width: 100, minWidth: 40, className: 'whitespace-nowrap' },
+  { key: 'productCode', label: 'Product Code', width: 100, minWidth: 40, className: 'whitespace-nowrap' },
+  { key: 'productDescription', label: 'Product Description', width: 200, minWidth: 100, className: 'whitespace-nowrap' },
+  { key: 'productActive', label: 'Product Active', width: 100, minWidth: 40, className: 'whitespace-nowrap' },
+];
 
 export default function PC_GeneralTab({ productCode, isActive, form, update }) {
 
@@ -46,18 +57,44 @@ function bindSelect(baseKey, options) {
     !!productCode && isActive
   );
 
+  // ✅ CENTRALIZED FORM SEEDING
+  /* Commented out 3/28/26 for the below
+  useFormSeed(data, update, [
+    { key: 'productCategoryCode', transform: v => String(v ?? '') },
+    { key: 'productProfileTypeCode', transform: v => String(v ?? '') },
+    { key: 'deferralPatternCode', transform: v => String(v ?? '') },
+    { key: 'active', transform: v => v === 'Y' },
+    { key: 'display', transform: v => v === 'Y' },
+    { key: 'changeRevenueLocation', transform: v => v === 'Y' },
+  ]);
+  */
+ /* Added 3/28/26*/
+   useFormSeed(data, update, [
+    { key: 'productCategoryCode' },
+    { key: 'productProfileTypeCode' },
+    { key: 'deferralPatternCode' },
+    { key: 'active',                transform: asBoolean },
+    { key: 'display',               transform: asBoolean },
+    { key: 'changeRevenueLocation', transform: asBoolean },
+    { key: 'paymentDate' },
+  ]);
+   /* End of Added 3/28/26*/
+
   const row = data ?? EMPTY;
+
+  const phcViewer = useEntityRelationViewer(`/api/product-components/${productCode}/phcs`);
+  
 
   if (!productCode) return <div className="p-3 text-sm text-gray-500">No product selected.</div>;
   if (loading) return <div className="p-3 text-sm">Loading General…</div>;
   if (error) return <div className="p-3 text-sm text-red-600">{error}</div>;
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Left Column */}
-        <div className="space-y-4">
+        <div className="space-y-4 pc-label-col-general-left">
           <ReadonlyField label="Product Code" value={row.productCode} />
           <ReadonlyField label="Description" value={row.description} />
 
@@ -84,7 +121,7 @@ function bindSelect(baseKey, options) {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-4">
+        <div className="space-y-4 pc-label-col-general-right">
           <div className="grid grid-cols-3 gap-4">
             <CheckRow
               label="Active"
@@ -101,12 +138,13 @@ function bindSelect(baseKey, options) {
               checked={form.changeRevenueLocation ?? false}
               onChange={v => update('changeRevenueLocation', v)}
             />
+          </div>
 
-            {/* View PHC Button */}
+          <div className="flex justify-center">
             <button
               className="btn btn-light"
               type="button"
-              onClick={() => {/* TODO: open PHC modal */}}
+              onClick={() => phcViewer.openViewer()}
             >
               View PHC
             </button>
@@ -114,7 +152,13 @@ function bindSelect(baseKey, options) {
 
             
 
-          <ReadonlyField label="Payment Date" value={row.paymentDate} />
+          
+          <LabeledDateInput
+                    label="Payment Date"
+                    value={form.paymentDate ?? ''}
+                    onChange={(v) => update('paymentDate', v)}
+                  />
+
           <ReadonlyField label="Reference" value={row.reference} />
 
           <LabeledSelect
@@ -125,9 +169,53 @@ function bindSelect(baseKey, options) {
         </div>
 
       </div>
-    </div>
+
+            <EntityRelationViewerModal
+        open={phcViewer.open}
+        onClose={phcViewer.closeViewer}
+        title={`PHCs Linked To Product Component (${productCode ?? ''})`}
+        columns={PHC_COLUMNS}
+        rows={phcViewer.rows}
+        loading={phcViewer.loading}
+        error={phcViewer.error}
+        emptyMessage="No PHCs are linked to this component."
+        storageKey="relation-phc-for-component"
+        getRowActions={buildPhcActions}
+      />
+      </>
   );
 }
+
+function buildPhcActions(phcRow) {
+  const phcCode = String(phcRow?.productHeaderCode ?? '');
+  const categoryCode = String(phcRow?.displayCategoryCode ?? '');
+
+    console.log('[PC_GeneralTab] open-phc-new-tab', {
+    phcCode,
+    categoryCode,
+    row: phcRow,
+  });
+
+  if (!phcCode) return [];
+
+  return [
+    {
+      key: 'open-phc-new-tab',
+      //label: 'Open PHC In New Tab',
+      label: newTabLabel('Go To Products for Sale'),
+
+      
+      onClick: () => {
+        const params = new URLSearchParams();
+        if (categoryCode) params.set('focusCategoryCode', categoryCode);
+        params.set('focusPhcCode', phcCode);
+        params.set('navTs', String(Date.now()));
+        window.open(`/product-manager/manage-products-for-sale?${params.toString()}`, '_blank');
+      },
+    },
+  ];
+}
+
 
 function ReadonlyField({ label, value }) {
   return (

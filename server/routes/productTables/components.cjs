@@ -1,4 +1,4 @@
-// server/routes/components.cjs
+// server/routes/productTables/components.cjs
 const express = require('express');
 const router = express.Router();
 const { getPool } = require('../../db/pool.cjs');
@@ -43,46 +43,44 @@ router.get('/components/tree', async (req, res, next) => {
           ros.Description AS component_roster,
           ISNULL(slpp.lift_product_type_code, '0') AS lift_product_type_code,
           slpt.description AS lift_product_type,
-          
-          
-          
+
           ISNULL(slpp.scan_process_order_code, '0') AS component_scan_process_order_code,
-        sspo.description AS component_scan_process_order,
+          sspo.description AS component_scan_process_order,
 
-        ISNULL(slpp.scan_type_code, '0') AS component_lift_scan_type_code,
-        sst.description AS component_lift_scan_type,
+          ISNULL(slpp.scan_type_code, '0') AS component_lift_scan_type_code,
+          sst.description AS component_lift_scan_type,
 
-        slpp.lift_charge_ind AS component_lift_charge_ind,
-        slpp.load_to_media_ind AS component_load_to_media,
-        CONVERT(varchar, slpp.effective_date, 103) AS component_lift_effective_date,
-        slpp.expiration_type AS component_lift_expiration_type,
-        slpp.expiration_days AS component_lift_expiration_days,
-        CONVERT(varchar, slpp.expiration_date, 103) AS component_lift_expiration_date,
+          slpp.lift_charge_ind AS component_lift_charge_ind,
+          slpp.load_to_media_ind AS component_load_to_media,
+          CONVERT(varchar, slpp.effective_date, 103) AS component_lift_effective_date,
+          slpp.expiration_type AS component_lift_expiration_type,
+          slpp.expiration_days AS component_lift_expiration_days,
+          CONVERT(varchar, slpp.expiration_date, 103) AS component_lift_expiration_date,
 
-        ISNULL(slepp.lesson_product_type_code, '0') AS component_lesson_product_type_code,
-        slept.description AS component_lesson_product_type,
+          ISNULL(slepp.lesson_product_type_code, '0') AS component_lesson_product_type_code,
+          slept.description AS component_lesson_product_type,
 
-        ISNULL(slepp.lesson_discipline_code, '0') AS component_lesson_discipline_code,
-        sld.description AS component_lesson_discipline,
+          ISNULL(slepp.lesson_discipline_code, '0') AS component_lesson_discipline_code,
+          sld.description AS component_lesson_discipline,
 
-        ISNULL(slepp.instructor_activity_code, '0') AS component_instructor_activity_code,
-        sia.description AS component_instructor_activity,
-        ISNULL(slepp.schedule_instructor_ind, '0') AS component_schedule_instructor,
+          ISNULL(slepp.instructor_activity_code, '0') AS component_instructor_activity_code,
+          sia.description AS component_instructor_activity,
+          ISNULL(slepp.schedule_instructor_ind, '0') AS component_schedule_instructor,
 
-        ISNULL(spp.pass_product_type_code, '0') AS component_pass_product_type_code,
-        sppt2.description AS component_pass_product_type,
+          ISNULL(spp.pass_product_type_code, '0') AS component_pass_product_type_code,
+          sppt2.description AS component_pass_product_type,
 
-        ISNULL(spp.pass_media_type_code, '0') AS component_pass_media_type_code,
-        spmt.description AS component_pass_media_type,
+          ISNULL(spp.pass_media_type_code, '0') AS component_pass_media_type_code,
+          spmt.description AS component_pass_media_type,
 
-        sp.operator_id AS component_operator_id,
-        CONVERT(varchar, sp.update_date, 103) AS component_update_date,
+          sp.operator_id AS component_operator_id,
+          CONVERT(varchar, sp.update_date, 103) AS component_update_date,
 
-        ISNULL(pdc.deferralcalendarcode, '0') AS component_deferral_calendar_code,
-        dc.description AS component_deferral_calendar,
+          ISNULL(pdc.deferralcalendarcode, '0') AS component_deferral_calendar_code,
+          dc.description AS component_deferral_calendar,
 
-        ISNULL(pcps.customerpropertysetcode, '0') AS component_customer_property_set_code,
-        cps.description AS component_customer_property_set 
+          ISNULL(pcps.customerpropertysetcode, '0') AS component_customer_property_set_code,
+          cps.description AS component_customer_property_set
       FROM s_product_group spg
       JOIN s_product_category spc
           ON spg.product_group_code = spc.product_group_code
@@ -110,9 +108,6 @@ router.get('/components/tree', async (req, res, next) => {
          ON sp.product_code = slpp.product_code
       LEFT JOIN s_lift_product_type slpt
          ON slpp.lift_product_type_code = slpt.lift_product_type_code
-
-
-      
       LEFT JOIN s_scan_process_order sspo
          ON slpp.scan_process_order_code = sspo.scan_process_order_code
       LEFT JOIN s_scan_type sst
@@ -139,7 +134,6 @@ router.get('/components/tree', async (req, res, next) => {
          ON sp.product_code = pcps.productcode
       LEFT JOIN CustomerPropertySet cps
          ON pcps.CustomerPropertySetCode = cps.CustomerPropertySetCode
-      
       ORDER BY
           spg.display_order,
           spg.product_group_code,
@@ -154,10 +148,8 @@ router.get('/components/tree', async (req, res, next) => {
 
     const rows = result.recordset;
 
-    // Shape into hierarchy (group -> category -> components)
     const groupMap = new Map();
     for (const r of rows) {
-      // Group
       let g = groupMap.get(r.product_group_code);
       if (!g) {
         g = {
@@ -169,7 +161,6 @@ router.get('/components/tree', async (req, res, next) => {
         };
         groupMap.set(r.product_group_code, g);
       }
-      // Category
       let c = g._catMap.get(r.product_category_code);
       if (!c) {
         c = {
@@ -181,7 +172,6 @@ router.get('/components/tree', async (req, res, next) => {
         g._catMap.set(r.product_category_code, c);
         g.categories.push(c);
       }
-      // Component
       c.components.push({
         code: r.component_code,
         label: r.component_desc,
@@ -189,12 +179,11 @@ router.get('/components/tree', async (req, res, next) => {
         active_ind: r.component_active,
         display_ind: r.component_display,
         product_category_code: r.product_category_code,
-         product_category_desc: r.product_category_desc,
+        product_category_desc: r.product_category_desc,
         product_profile_type_code: r.component_product_profile_type_code,
         product_profile_type: r.component_product_profile_type,
         deferral_pattern_code: r.component_deferral_pattern_code,
         deferral_pattern: r.component_deferral_pattern,
-
         units: r.component_units,
         revenue_report_ind: r.component_revenue_report_ind,
         change_revenue_location_ind: r.component_change_revenue_location_ind,
@@ -234,8 +223,7 @@ router.get('/components/tree', async (req, res, next) => {
         deferral_calendar_code: r.component_deferral_calendar_code,
         deferral_calendar: r.component_deferral_calendar,
         customer_property_set_code: r.component_customer_property_set_code,
-        customer_property_set: r.component_customer_property_set
-
+        customer_property_set: r.component_customer_property_set,
       });
     }
 
@@ -250,7 +238,6 @@ router.get('/components/tree', async (req, res, next) => {
   }
 });
 
-// --- Modal detail endpoints ---
 router.get('/product-components/:productCode/general', async (req, res, next) => {
   try {
     const productCode = Number(req.params.productCode);
@@ -265,8 +252,8 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
         spc.product_category_code AS productCategoryCode,
         spc.description AS productCategory,
         sp.display_order AS displayOrder,
+        sp.product_profile_type_code AS productProfileTypeCode,
         spp.description AS productProfileType,
-        spp.product_profile_type_code AS productProfileTypeCode,
         sp.units AS units,
         sp.sales_units AS salesUnits,
         sp.active_ind AS active,
@@ -274,8 +261,8 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
         sp.change_revenue_location_ind AS changeRevenueLocation,
         CONVERT(VARCHAR, sp.payment_date, 103) AS paymentDate,
         sp.product_reference AS reference,
+        sp.deferral_pattern_code AS deferralPatternCode,
         sdp.description AS deferralPattern,
-        sdp.deferral_pattern_code AS deferralPatternCode,
         sp.operator_id AS operatorId,
         CONVERT(VARCHAR, sp.update_date, 103) AS updateDate
       FROM s_product sp
@@ -291,6 +278,36 @@ router.get('/product-components/:productCode/general', async (req, res, next) =>
   }
 });
 
+router.get('/product-components/:productCode/phcs', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT DISTINCT
+        sph.product_header_code AS productHeaderCode,
+        sph.description AS productHeaderDescription,
+        sph.active_ind AS productHeaderActive,
+        sp.product_code AS productCode,
+        sp.description AS productDescription,
+        sp.active_ind AS productActive
+      FROM s_product_header_location sphl
+      JOIN s_product_header sph
+        ON sph.product_header_code = sphl.product_header_code
+      JOIN s_product sp
+        ON sp.product_code = sphl.product_code
+      WHERE sphl.product_code = @productCode
+      ORDER BY sph.product_header_code, sph.description;
+    `);
+
+    res.json({ rows: result.recordset ?? [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/product-components/:productCode/additional', async (req, res, next) => {
   try {
     const productCode = Number(req.params.productCode);
@@ -300,20 +317,33 @@ router.get('/product-components/:productCode/additional', async (req, res, next)
 
     const result = await request.query(`
       SELECT
+        sp.CRMCustomerTypeCode AS crmCustomerTypeCode,
         crmc.description AS crmCustomerType,
+        crmpc.CRMProductCategoryCode AS crmProductCategoryCode,
         ISNULL(crmpc.description, '') AS crmProductCategory,
+        crmp.CRMProductCode AS crmProductCode,
         ISNULL(crmp.description, '') AS crmProduct,
-        ISNULL(ip.description, '') AS inventoryPool,
+        spip.InventoryPoolCode AS inventoryPoolCode,
+        ISNULL(ip.Description, '') AS inventoryPool,
+        sps.statistic_code AS revenueStatisticCode,
         ssr.description AS revenueStatistic,
+        spr.RosterCode AS rosterCode,
         ISNULL(r.Description, '<None>') AS roster,
+        sp.sales_statistic_code AS salesStatisticCode,
         sss.description AS salesStatistic,
+        pdc.deferralcalendarcode AS deferralCalendarCode,
         ISNULL(dc.Description, '<None>') AS deferralCalendar,
+        pcps.CustomerPropertySetCode AS customerPropertySetCode,
         ISNULL(cps.Description, '<None>') AS customerPropertySet,
         sp.CRMEventInd AS crmEvent,
         'N' AS onlineHotlist,
         sp.revenue_report_ind AS reportRevenue,
         sp.PrintAcademyLabels AS printAcademyLabels,
         spip.offline_freesell_ind AS offlineFreeSell,
+        CASE
+          WHEN CONVERT(VARCHAR, sp.RevenueLocationOverrideCategoryCode) = 0 THEN NULL
+          ELSE sp.RevenueLocationOverrideCategoryCode
+        END AS revenueLocationOverrideCategoryCode,
         CASE
           WHEN CONVERT(VARCHAR, sp.RevenueLocationOverrideCategoryCode) = 0 THEN '<None>'
           ELSE CONVERT(VARCHAR, sp.RevenueLocationOverrideCategoryCode)
@@ -333,6 +363,45 @@ router.get('/product-components/:productCode/additional', async (req, res, next)
       LEFT JOIN deferralcalendar dc ON pdc.deferralcalendarcode = dc.deferralcalendarcode
       LEFT JOIN ProductCustomerPropertySet pcps ON sp.product_code = pcps.ProductCode
       LEFT JOIN CustomerPropertySet cps ON pcps.CustomerPropertySetCode = cps.CustomerPropertySetCode
+      WHERE sp.product_code = @productCode
+    `);
+
+    res.json({ row: result.recordset?.[0] ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/product-components/:productCode/profile', async (req, res, next) => {
+  try {
+    const productCode = Number(req.params.productCode);
+    const pool = await getPool();
+    const request = pool.request();
+    request.input('productCode', productCode);
+
+    const result = await request.query(`
+      SELECT
+        ISNULL(slpp.lift_product_type_code, '0')   AS liftProductTypeCode,
+        slpt.description                            AS liftProductType,
+        ISNULL(slpp.scan_process_order_code, '0')  AS scanProcessOrderCode,
+        sspo.description                            AS scanProcessOrder,
+        ISNULL(slpp.scan_type_code, '0')           AS liftScanTypeCode,
+        sst.description                             AS liftScanType,
+        slpp.lift_charge_ind                        AS liftChargeInd,
+        slpp.load_to_media_ind                      AS loadToMediaInd,
+        CONVERT(VARCHAR, slpp.effective_date, 23)   AS liftEffectiveDate,
+        slpp.expiration_type                        AS expirationType,
+        slpp.expiration_days                        AS expirationDays,
+        CONVERT(VARCHAR, slpp.expiration_date, 23)  AS expirationDate
+      FROM s_product sp
+      LEFT JOIN s_lift_product_profile slpp
+        ON sp.product_code = slpp.product_code
+      LEFT JOIN s_lift_product_type slpt
+        ON slpp.lift_product_type_code = slpt.lift_product_type_code
+      LEFT JOIN s_scan_process_order sspo
+        ON slpp.scan_process_order_code = sspo.scan_process_order_code
+      LEFT JOIN s_scan_type sst
+        ON slpp.scan_type_code = sst.scan_type_code
       WHERE sp.product_code = @productCode
     `);
 
