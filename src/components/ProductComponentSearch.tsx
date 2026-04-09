@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, ReactNode} from 'react';
+import React, { useEffect, useMemo, useRef, useState, ReactNode} from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
@@ -60,6 +60,7 @@ const COMPONENT_COLUMNS = [
   { key: 'customer_property_set', label: 'Customer Property Set', sortable: true },
   { key: 'operator_id', label: 'Operator ID', sortable: true },
   { key: 'update_date', label: 'Updated', sortable: true },
+  
 ];
 
 const TABLE_STORAGE_KEY = 'product-component-search';
@@ -302,11 +303,90 @@ useEffect(() => {
     setResultRows([]);
   };
 
-  const handleClear = () => {
+    const handleClear = () => {
     setFilters({ pc: '', description: '' });
+    setAdvFilters({ lobCode: '', groupCode: '', categoryCode: '', active: '', q: '' });
     setSearchTitle('');
     setResultRows([]);
     setSelectedCompCode('');
+  };
+  
+  // ── Advanced search ──────────────────────────────────────────────
+  const [advFilters, setAdvFilters] = useState({ lobCode: '', groupCode: '', categoryCode: '', active: '', q: '' });
+  const [advLoading, setAdvLoading] = useState(false);
+  
+  const isSearchDisabled = !filters.pc.trim() && !filters.description.trim();
+  
+    const advLobs = useMemo(() => {
+    const seen = new Set<string>();
+    const lobs: { code: string; label: string }[] = [];
+    for (const g of tree as any[]) {
+      const code = String(g.lobCode ?? '');
+      if (code && !seen.has(code)) {
+        seen.add(code);
+        lobs.push({ code, label: String(g.lobLabel ?? code) });
+      }
+    }
+    return lobs;
+  }, [tree]);
+  
+  const advGroups = useMemo(() => {
+    const groups = tree as any[];
+    const filtered = advFilters.lobCode
+      ? groups.filter(g => String(g.lobCode ?? '') === advFilters.lobCode)
+      : groups;
+    return filtered.map(g => ({ code: String(g.groupCode), label: String(g.label) }));
+  }, [tree, advFilters.lobCode]);
+  
+  const advCategories = useMemo(() => {
+    if (!advFilters.groupCode) return [];
+    const g = (tree as any[]).find(x => String(x.groupCode) === advFilters.groupCode);
+    return (g?.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label) }));
+  }, [tree, advFilters.groupCode]);
+  
+  // Cascade: clear category if group changes and current category no longer belongs
+  useEffect(() => {
+    if (!advFilters.groupCode || !advFilters.categoryCode) return;
+    if (!advCategories.some(c => c.code === advFilters.categoryCode)) {
+      setAdvFilters(f => ({ ...f, categoryCode: '' }));
+    }
+  }, [advFilters.groupCode, advCategories]);
+
+    useEffect(() => {
+    if (!advFilters.lobCode || !advFilters.groupCode) return;
+    if (!advGroups.some(g => g.code === advFilters.groupCode)) {
+      setAdvFilters(f => ({ ...f, groupCode: '', categoryCode: '' }));
+    }
+  }, [advFilters.lobCode, advGroups]);
+  
+  const handleApplyAdvanced = async () => {
+    const { lobCode, groupCode, categoryCode, active, q } = advFilters;
+    if (!lobCode && !groupCode && !categoryCode && !active && !q.trim()) {
+      if (!window.confirm('No criteria entered. This will return all product components. Continue?')) return;
+    }
+    setAdvLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (lobCode) params.set('lobCode', lobCode);
+      if (groupCode) params.set('groupCode', groupCode);
+      if (categoryCode) params.set('categoryCode', categoryCode);
+      if (active) params.set('active', active);
+      if (q.trim()) params.set('q', q.trim());
+      const res = await fetch(`/api/product-components/search?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const rows = (data.rows ?? []) as any[];
+      setResultRows(rows);
+      setSearchTitle(`Results (${rows.length})`);
+      setSelectedCompCode('');
+      setPendingAnchorCompCode(null);
+    } catch (e) {
+      console.error('[PC Advanced Search]', e);
+      setResultRows([]);
+      setSearchTitle('Results (0)');
+    } finally {
+      setAdvLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -405,8 +485,81 @@ useEffect(() => {
           </div>
         </>
       }
-      searchPanel={
-        <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+            searchPanel={
+        <SearchToolbar
+          onSearch={handleSearch}
+          onClear={handleClear}
+          isSearchDisabled={isSearchDisabled}
+          onApplyAdvanced={handleApplyAdvanced}
+          applyAdvancedLoading={advLoading}
+          advancedChildren={
+            <div className="grid grid-cols-12 gap-4 items-end">
+                            <div className="col-span-3">
+                {/* <label className="block text-xs text-gray-600 mb-1">LOB</label> */}
+                <select
+                  value={advFilters.lobCode}
+                  onChange={e => setAdvFilters(f => ({ ...f, lobCode: e.target.value, groupCode: '', categoryCode: '' }))}
+                  className="w-full h-10 px-3 py-2 pmsearch"
+                >
+                  <option value="">LOB</option>
+                  {advLobs.map(l => (
+                    <option key={l.code} value={l.code}>{l.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-4">
+                {/* <label className="block text-xs text-gray-600 mb-1">Product Group</label> */}
+                <select
+                  value={advFilters.groupCode}
+                  onChange={e => setAdvFilters(f => ({ ...f, groupCode: e.target.value, categoryCode: '' }))}
+                  className="w-full h-10 px-3 py-2 pmsearch"
+                >
+                  <option value="">Product Group</option>
+                  {advGroups.map(g => (
+                    <option key={g.code} value={g.code}>{g.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-4">
+                {/* <label className="block text-xs text-gray-600 mb-1">Product Category</label> */}
+                <select
+                  value={advFilters.categoryCode}
+                  onChange={e => setAdvFilters(f => ({ ...f, categoryCode: e.target.value }))}
+                  className="w-full h-10 px-3 py-2 pmsearch"
+                  disabled={!advFilters.groupCode}
+                  title={!advFilters.groupCode ? 'Select a Product Group first' : undefined}
+                >
+                  <option value="">Product Category</option>
+                  {advCategories.map(c => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-1">
+                {/* <label className="block text-xs text-gray-600 mb-1">Active</label> */}
+                <select
+                  value={advFilters.active}
+                  onChange={e => setAdvFilters(f => ({ ...f, active: e.target.value }))}
+                  className="w-full h-10 px-3 py-2 pmsearch"
+                >
+                  <option value="">Active</option>
+                  <option value="Y">Y</option>
+                  <option value="N">N</option>
+                </select>
+              </div>
+              <div className="col-span-12">
+                <textarea
+                  value={advFilters.q}
+                  onChange={e => setAdvFilters(f => ({ ...f, q: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleApplyAdvanced(); } }}
+                  placeholder="Advanced Query"
+                  rows={2}
+                  className="w-full h-10 px-3 py-2 font-mono text-sm pmsearch"
+                />
+              </div>
+            </div>
+          }
+        >
           <input
             type="text"
             name="pc"
@@ -439,7 +592,7 @@ useEffect(() => {
           data={tableRows}
           rowKey="code"
           storageKey={TABLE_STORAGE_KEY}
-          loading={loading}
+          loading={loading || advLoading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row: any) => {
             setSelectedCompCode(String(row.code ?? ''));
