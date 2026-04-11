@@ -4,6 +4,7 @@ import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import { useModalSession } from '../../../context/ModalSessionContext';
 import RowContextMenu from '../../../components/shared/RowContextMenu';
 import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
+import PaneSearchBar from '../../../components/shared/PaneSearchBar';
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -36,12 +37,9 @@ function normalizeAssigned(payload) {
 export default function ProductComponentsTab({ productPhc, onComponentsChanged }) {
   const { tabForms, setTabForm } = useModalSession();
 
-  // ADD THIS
   const sessionKey = `productComponents:${productPhc ?? ''}`;
 
-  // fetch once per modal session — won't re-fetch on tab switch
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
 
   const { data: componentData, loading } = useModalCachedFetch(
     `product-components-${productPhc}`,
@@ -53,7 +51,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     !!productPhc
   );
 
-    const { data: treeData, loading: treeLoading } = useModalCachedFetch(
+  const { data: treeData, loading: treeLoading } = useModalCachedFetch(
     'components-tree',
     async () => {
       const res = await fetch(`${API_BASE}/api/components/tree`);
@@ -121,8 +119,8 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   const [expanded, setExpanded] = useState(new Set());
 
   // selection state (indexes, not codes)
-  const [availSelection, setAvailSelection] = useState([]);   // indexes into visibleComponents
-  const [assignSelection, setAssignSelection] = useState([]); // indexes into assigned array
+  const [availSelection, setAvailSelection] = useState([]);
+  const [assignSelection, setAssignSelection] = useState([]);
 
   // selection anchor for SHIFT ranges
   const [availAnchor, setAvailAnchor] = useState(null);
@@ -131,47 +129,63 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   // simple context menu for right-click on Assigned
   const [menu, setMenu] = useState({ open: false, x: 0, y: 0 });
 
-  // -------------------- Data loading --------------------
+  // ── Search ───────────────────────────────────────────────────
+  const [appliedSearch, setAppliedSearch] = useState({ code: '', desc: '' });
+  const [pendingSelectCode, setPendingSelectCode] = useState(null);
+  const isDescMode = !!appliedSearch.desc.trim();
+  const hasActiveSearch = !!(appliedSearch.code || appliedSearch.desc);
 
-  // Assigned components (for this PHC)
-  // useEffect(() => {
-  //   if (!productPhc) {
-  //     console.warn('[PC Tab] no productPhc; skipping assigned fetch');
-  //     return;
-  //   }
-  //   const url = `/api/products/${encodeURIComponent(productPhc)}/components`;
-  //   fetch(url)
-  //     .then(r => r.json())
-  //     .then(data => setAssigned(Array.isArray(data) ? data : (data?.rows ?? [])))
-  //     .catch(err => console.error('[PC Tab] assigned load failed', err));
-  // }, [productPhc]);
+  // -------------------- Derived data --------------------
 
-  // Lookup of already-assigned component codes
   const assignedLookup = useMemo(
     () => new Set(assigned.map(a => a.component_code)),
     [assigned]
   );
 
-  // Build a flat list of *visible* components (leaves only) based on expansion
-  // Also build a map for O(1) code->visibleIndex
+  // In description mode, filter the tree to matching components only
+  const displayTree = useMemo(() => {
+    if (!appliedSearch.desc.trim()) return tree;
+    const term = appliedSearch.desc.toLowerCase();
+    const result = [];
+    for (const g of tree) {
+      const matchingCats = [];
+      for (const cat of g.categories ?? []) {
+        const matchingComps = (cat.components ?? []).filter(c =>
+          String(c.label ?? '').toLowerCase().includes(term)
+        );
+        if (matchingComps.length) matchingCats.push({ ...cat, components: matchingComps });
+      }
+      if (matchingCats.length) result.push({ ...g, categories: matchingCats });
+    }
+    return result;
+  }, [tree, appliedSearch.desc]);
+
+  // In description mode, auto-expand everything in the filtered tree
+  const expandedEffective = useMemo(() => {
+    if (!isDescMode) return expanded;
+    const all = new Set();
+    for (const g of displayTree) {
+      all.add(g.groupCode);
+      for (const cat of g.categories ?? []) all.add(cat.categoryCode);
+    }
+    return all;
+  }, [isDescMode, displayTree, expanded]);
+
   const { visibleComponents, indexByCode } = useMemo(() => {
     const vis = [];
     const map = new Map();
-    for (const g of tree) {
-      const gOpen = expanded.has(g.groupCode);
-      // We include only leaves (components) in this flat list.
-      if (!gOpen) continue;
-      for (const c of g.categories) {
-        const cOpen = expanded.has(c.categoryCode);
-        if (!cOpen) continue;
-        for (const comp of c.components) {
+    for (const g of displayTree) {
+      if (!expandedEffective.has(g.groupCode)) continue;
+      for (const c of g.categories ?? []) {
+        if (!expandedEffective.has(c.categoryCode)) continue;
+        for (const comp of c.components ?? []) {
           map.set(comp.code, vis.length);
           vis.push({ code: comp.code, label: comp.label });
         }
       }
     }
     return { visibleComponents: vis, indexByCode: map };
-  }, [tree, expanded]);
+  }, [displayTree, expandedEffective]);
 
   // -------------------- Expand/Collapse --------------------
 
@@ -182,6 +196,42 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       else next.add(key);
       return next;
     });
+  }
+
+  // -------------------- Search --------------------
+
+  function handleCodeSearch(code) {
+    setAppliedSearch({ code, desc: '' });
+    const codeLower = code.toLowerCase();
+    for (const g of tree) {
+      for (const cat of g.categories ?? []) {
+        for (const comp of cat.components ?? []) {
+          if (String(comp.code ?? '').toLowerCase() === codeLower) {
+            setExpanded(prev => {
+              const next = new Set(prev);
+              next.add(g.groupCode);
+              next.add(cat.categoryCode);
+              return next;
+            });
+            setPendingSelectCode(String(comp.code));
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  function handleDescSearch(desc) {
+    setAppliedSearch({ code: '', desc });
+    setAvailSelection([]);
+    setAvailAnchor(null);
+  }
+
+  function handleClearSearch() {
+    setAppliedSearch({ code: '', desc: '' });
+    setAvailSelection([]);
+    setAvailAnchor(null);
+    setPendingSelectCode(null);
   }
 
   // -------------------- Selection helpers --------------------
@@ -204,25 +254,20 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       return { next: arr, anchor: anchorIndex ?? clickedIndex };
     }
 
-    // Plain click => single-select
     return { next: [clickedIndex], anchor: clickedIndex };
   }
 
-  // Available item click (component only)
   function handleAvailableClick(visibleIndex, e) {
     const { next, anchor } = updateSelection(availSelection, visibleIndex, e, availAnchor);
     setAvailSelection(next);
     setAvailAnchor(anchor);
-    // Close context menu if open
     if (menu.open) setMenu(m => ({ ...m, open: false }));
   }
 
-  // Assigned item click
   function handleAssignedClick(rowIndex, e) {
     const { next, anchor } = updateSelection(assignSelection, rowIndex, e, assignAnchor);
     setAssignSelection(next);
     setAssignAnchor(anchor);
-    // Close context menu if open
     if (menu.open) setMenu(m => ({ ...m, open: false }));
   }
 
@@ -231,7 +276,6 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
   function addSelected() {
     if (availSelection.length === 0) return;
 
-    // translate selected visible indexes -> codes
     const selectedCodes = availSelection
       .map(i => visibleComponents[i])
       .filter(Boolean)
@@ -244,12 +288,10 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       ...prev,
       ...selectedCodes.map(code => ({
         component_code: code,
-        component_desc:
-          visibleComponents[indexByCode.get(code)]?.label || code,
+        component_desc: visibleComponents[indexByCode.get(code)]?.label || code,
       })),
     ]);
 
-    // clear selection
     setAvailSelection([]);
     setAvailAnchor(null);
     onComponentsChanged?.();
@@ -261,7 +303,6 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     const toRemove = new Set(assignSelection);
     updateAssigned(prev => prev.filter((_, idx) => !toRemove.has(idx)));
 
-    // clear selection
     setAssignSelection([]);
     setAssignAnchor(null);
     onComponentsChanged?.();
@@ -286,13 +327,10 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
   function openContextMenuForAssigned(e, index) {
     e.preventDefault();
-
-    // If right-clicked row is not in selection, make it the active single selection
     if (!assignSelection.includes(index)) {
       setAssignSelection([index]);
       setAssignAnchor(index);
     }
-
     setMenu({ open: true, x: e.clientX, y: e.clientY });
   }
 
@@ -300,27 +338,33 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     const targets = assignSelection.length
       ? assignSelection.map((i) => assigned[i]).filter(Boolean)
       : [];
-
     if (!targets.length) return;
-// replaced 4/2/26 AS with the below stub (actual implementation for "Modify" action)
-    // alert(
-    //   `Modify… for ${targets.length} component(s).\n\n${targets
-    //     .map((t) => `${t.component_desc} (${t.component_code})`)
-    //     .join('\n')}`
-    // );
-//replacement here: open a new window/tab to the component management page, passing the first selected component code as a query param for focus (actual implementation TBD)
-        const code = targets[0].component_code;
+    const code = targets[0].component_code;
     window.open(
       `/product-manager/manage-product-component?focusComponentCode=${encodeURIComponent(code)}`,
       '_blank'
     );
   }
 
+  // -------------------- Scroll to pending code --------------------
+
+  useEffect(() => {
+    if (!pendingSelectCode) return;
+    const visIndex = indexByCode.get(pendingSelectCode);
+    if (visIndex == null) return;
+    setAvailSelection([visIndex]);
+    setAvailAnchor(visIndex);
+    setPendingSelectCode(null);
+    requestAnimationFrame(() => {
+      document.getElementById(`pct-comp-${pendingSelectCode}`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }, [pendingSelectCode, indexByCode]);
+
   // -------------------- Render --------------------
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Context menu */}
       {menu.open && (
         <RowContextMenu
           x={menu.x}
@@ -339,7 +383,19 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
       )}
 
       <DualPane
-        leftTitle="Product Groups"
+        leftTitle={
+          isDescMode
+            ? `Results (${displayTree.reduce((n, g) => n + g.categories.reduce((m, c) => m + c.components.length, 0), 0)})`
+            : 'Product Groups'
+        }
+        leftHeader={
+          <PaneSearchBar
+            onCodeSearch={handleCodeSearch}
+            onDescSearch={handleDescSearch}
+            onClear={handleClearSearch}
+            hasActiveSearch={hasActiveSearch}
+          />
+        }
         rightTitle="Assigned Products"
         onAdd={addSelected}
         onRemove={removeSelected}
@@ -351,36 +407,33 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
               <div className="flex justify-center py-6">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400" />
               </div>
-             ) : tree.length === 0 ? (
+            ) : tree.length === 0 ? (
               <div className="text-xs text-neutral-500">No product groups.</div>
             ) : (
-              tree.map(group => (
+              displayTree.map(group => (
                 <div key={group.groupCode}>
                   <TreeHeader
                     label={group.label}
-                    expanded={expanded.has(group.groupCode)}
+                    expanded={expandedEffective.has(group.groupCode)}
                     onClick={() => toggleExpand(group.groupCode)}
                   />
-
-                  {expanded.has(group.groupCode) &&
+                  {expandedEffective.has(group.groupCode) &&
                     group.categories.map((cat) => (
                       <div key={cat.categoryCode} className="ml-4">
                         <TreeHeader
                           label={cat.label}
-                          expanded={expanded.has(cat.categoryCode)}
+                          expanded={expandedEffective.has(cat.categoryCode)}
                           onClick={() => toggleExpand(cat.categoryCode)}
                         />
-
-                        {expanded.has(cat.categoryCode) &&
+                        {expandedEffective.has(cat.categoryCode) &&
                           cat.components.map((comp) => {
                             const visIndex = indexByCode.get(comp.code);
-                            const selected =
-                              visIndex != null && availSelection.includes(visIndex);
+                            const selected = visIndex != null && availSelection.includes(visIndex);
                             const disabled = assignedLookup.has(comp.code);
-
                             return (
                               <div
                                 key={comp.code}
+                                id={`pct-comp-${comp.code}`}
                                 className={
                                   'ml-4 cursor-pointer px-2 py-1 rounded ' +
                                   (selected ? 'bg-blue-100 ' : '') +
@@ -415,9 +468,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
                 return (
                   <div
                     key={a.component_code}
-                    className={`cursor-pointer px-2 py-1 rounded ${
-                      selected ? 'bg-blue-100' : ''
-                    }`}
+                    className={`cursor-pointer px-2 py-1 rounded ${selected ? 'bg-blue-100' : ''}`}
                     title="Click to select. CTRL/CMD multi-select, SHIFT for ranges. Right-click for actions."
                     onClick={(e) => handleAssignedClick(i, e)}
                     onContextMenu={(e) => openContextMenuForAssigned(e, i)}

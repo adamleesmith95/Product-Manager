@@ -3,6 +3,7 @@ import React, { ReactNode } from 'react';
 interface Props {
   leftTitle?: string;
   rightTitle?: string;
+  leftHeader?: ReactNode;  // ADDed 4/11/26 AS
   leftContent: ReactNode;
   rightContent: ReactNode;
   onAdd: () => void;
@@ -16,6 +17,7 @@ interface Props {
 export default function DualPane({
   leftTitle = 'Available',
   rightTitle = 'Assigned',
+  leftHeader,  // ADDed 4/11/26 AS
   leftContent,
   rightContent,
   onAdd,
@@ -30,8 +32,11 @@ export default function DualPane({
 
       {/* LEFT */}
       <div className="border rounded p-3 flex flex-col min-h-0">
-        {leftTitle && (
-          <h3 className="font-semibold mb-2 shrink-0">{leftTitle}</h3>
+                {(leftTitle || leftHeader) && (
+          <div className="flex items-center gap-2 mb-2 shrink-0">
+            {leftTitle && <h3 className="font-semibold shrink-0">{leftTitle}</h3>}
+            {leftHeader && <div className="flex-1 min-w-0">{leftHeader}</div>}
+          </div>
         )}
         <div className="flex-1 min-h-0 overflow-y-auto">
           {leftContent}
