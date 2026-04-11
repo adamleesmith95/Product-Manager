@@ -339,10 +339,16 @@ useEffect(() => {
   }, [tree, advFilters.lobCode]);
   
   const advCategories = useMemo(() => {
-    if (!advFilters.groupCode) return [];
-    const g = (tree as any[]).find(x => String(x.groupCode) === advFilters.groupCode);
-    return (g?.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label) }));
-  }, [tree, advFilters.groupCode]);
+    const groups = tree as any[];
+    const filteredGroups = advFilters.groupCode
+      ? groups.filter(g => String(g.groupCode) === advFilters.groupCode)
+      : advFilters.lobCode
+      ? groups.filter(g => String(g.lobCode ?? '') === advFilters.lobCode)
+      : groups;
+    return filteredGroups.flatMap(g =>
+      (g.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label) }))
+    );
+  }, [tree, advFilters.groupCode, advFilters.lobCode]);
   
   // Cascade: clear category if group changes and current category no longer belongs
   useEffect(() => {
@@ -444,7 +450,12 @@ useEffect(() => {
         <>
           <div className="pm-sidebar-title">Product Groups</div>
           <div className="pm-sidebar-scroll">
-            {tree.map(group => {
+            {loading && !tree.length ? (
+            <div className="flex justify-center items-center py-6">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400" />
+            </div>
+          ) : (
+            tree.map(group => {
               const open = expandedGroups.has(group.groupCode);
               return (
                 <div key={group.groupCode} className="mb-2">
@@ -481,7 +492,7 @@ useEffect(() => {
                   })}
                 </div>
               );
-            })}
+            }))}
           </div>
         </>
       }
@@ -526,8 +537,6 @@ useEffect(() => {
                   value={advFilters.categoryCode}
                   onChange={e => setAdvFilters(f => ({ ...f, categoryCode: e.target.value }))}
                   className="w-full h-10 px-3 py-2 pmsearch"
-                  disabled={!advFilters.groupCode}
-                  title={!advFilters.groupCode ? 'Select a Product Group first' : undefined}
                 >
                   <option value="">Product Category</option>
                   {advCategories.map(c => (

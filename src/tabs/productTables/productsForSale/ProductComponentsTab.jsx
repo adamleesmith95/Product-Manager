@@ -53,7 +53,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
     !!productPhc
   );
 
-  const { data: treeData } = useModalCachedFetch(
+    const { data: treeData, loading: treeLoading } = useModalCachedFetch(
     'components-tree',
     async () => {
       const res = await fetch(`${API_BASE}/api/components/tree`);
@@ -347,10 +347,14 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
         removeDisabled={assignSelection.length === 0}
         leftContent={
           <>
-            {tree.length === 0 ? (
+            {treeLoading && tree.length === 0 ? (
+              <div className="flex justify-center py-6">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400" />
+              </div>
+             ) : tree.length === 0 ? (
               <div className="text-xs text-neutral-500">No product groups.</div>
             ) : (
-              tree.map((group) => (
+              tree.map(group => (
                 <div key={group.groupCode}>
                   <TreeHeader
                     label={group.label}
