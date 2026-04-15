@@ -5,6 +5,11 @@ import { useModalSession } from '../../../context/ModalSessionContext';
 import RowContextMenu from '../../../components/shared/RowContextMenu';
 import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 import PaneSearchBar from '../../../components/shared/PaneSearchBar';
+import Modal from '../../../components/Modal';
+import { useBrowserModal } from '../../../hooks/useBrowserModal';
+import BrowserModal from '../../../components/shared/BrowserModal';
+import { ProductComponentBrowser } from '../../../pages/ManageProductComponent';
+
 
 // -------------------------------------------------------------
 // ProductComponentsTab
@@ -128,6 +133,8 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
   // simple context menu for right-click on Assigned
   const [menu, setMenu] = useState({ open: false, x: 0, y: 0 });
+    const [modifyModalCode, setModifyModalCode] = useState(null);
+        const pcModal = useBrowserModal();
 
   // ── Search ───────────────────────────────────────────────────
   const [appliedSearch, setAppliedSearch] = useState({ code: '', desc: '' });
@@ -378,6 +385,15 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
                 setMenu(m => ({ ...m, open: false }));
               },
             },
+                        {
+            key: 'modify-panel',
+            label: 'Modify...',
+            onClick: () => {
+              const target = assigned[assignSelection[0]];
+              if (target) pcModal.openModal(String(target.component_code));
+              setMenu(m => ({ ...m, open: false }));
+            },
+          },
           ]}
         />
       )}
@@ -453,6 +469,19 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
                           })}
                       </div>
                     ))}
+
+                                        <Modal
+                      open={!!modifyModalCode}
+                      onClose={() => setModifyModalCode(null)}
+                      title={modifyModalCode ? `Manage Product Component (${modifyModalCode})` : 'Manage Product Component'}
+                      headerClassName="pcphc-modal-header"
+                      titleClassName="pcphc-modal-title"
+                      panelClassName="pcphc-modal-panel"
+                    >
+                      {modifyModalCode && (
+                        <ProductComponentBrowser key={modifyModalCode} initialFocusCode={modifyModalCode} />
+                      )}
+                    </Modal>
                 </div>
               ))
             )}
@@ -484,6 +513,14 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
           </>
         }
       />
+
+            <BrowserModal
+        open={pcModal.open}
+        onClose={pcModal.closeModal}
+        title={pcModal.focusCode ? `Manage Product Component (${pcModal.focusCode})` : 'Manage Product Component'}
+      >
+        {pcModal.open && <ProductComponentBrowser key={pcModal.focusCode} initialFocusCode={pcModal.focusCode} />}
+      </BrowserModal>
     </div>
   );
 }
