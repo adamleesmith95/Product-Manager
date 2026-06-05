@@ -44,7 +44,7 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
   const sessionKey = `productComponents:${productPhc ?? ''}`;
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const { data: componentData, loading } = useModalCachedFetch(
     `product-components-${productPhc}`,

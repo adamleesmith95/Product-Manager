@@ -7,3 +7,4 @@ export default function PromptsTab({ form, update }) {
     </div>
   );
 }
+    

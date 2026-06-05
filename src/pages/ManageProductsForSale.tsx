@@ -24,7 +24,7 @@ type ProductRow = {
 type DetailState = { open: boolean; product?: ProductRow };
 type DC_DetailState = { open: boolean; code: string | null; description?: string };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 function PrefetchWarmup({ phcCode }: { phcCode: string }) {
   // These just warm the cache — return values intentionally ignored.

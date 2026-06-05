@@ -333,4 +333,184 @@ router.get('/products/:phc/components', async (req, res, next) => {
   }
 });
 
+
+/** GET /api/products/:phc/pricing — pricing data for a PHC */
+router.get('/products/:phcCode/pricing', async (req, res, next) => {
+  try {
+    const { phcCode } = req.params;
+    const pool = await getPool();
+
+    // Determine pricing type
+    const typeReq = pool.request();
+    typeReq.input('phc', sql.VarChar(50), phcCode);
+    const typeResult = await typeReq.query(`
+      SELECT price_by_location_ind, price_by_season_ind
+      FROM dbo.s_product_header
+      WHERE product_header_code = @phc
+    `);
+    if (!typeResult.recordset.length) {
+      return res.status(404).json({ error: 'PHC_NOT_FOUND' });
+    }
+    const { price_by_location_ind: byLoc, price_by_season_ind: bySeason } = typeResult.recordset[0];
+    const pricingType =
+      byLoc === 'N' && bySeason === 'N' ? 'D'  :
+      byLoc === 'N' && bySeason === 'Y' ? 'S'  :
+      byLoc === 'Y' && bySeason === 'N' ? 'LD' : 'LS';
+
+    const r = pool.request();
+    r.input('phc', sql.VarChar(50), phcCode);
+
+    const queries = {
+      D: `
+        SELECT
+          sp.Description                              AS product,
+          spp.product_code                            AS product_code,
+          CONVERT(varchar, spp.effective_date,  103)  AS effective_date,
+          CONVERT(varchar, spp.expiration_date, 103)  AS expiration_date,
+          spp.price                                   AS price,
+          spp.price_allocation_ind                    AS price_allocation,
+          spp.discount_allocation_ind                 AS discount_allocation,
+          spp.commission_allocation_ind               AS commission_allocation,
+          spp.operator_id                             AS operator_id,
+          CONVERT(varchar, spp.update_date, 103)      AS update_date
+        FROM dbo.s_date_range_product_price spp
+        JOIN dbo.s_product sp ON sp.product_code = spp.product_code
+        WHERE spp.product_header_code = @phc
+        ORDER BY sp.Description, spp.effective_date
+      `,
+      S: `
+        SELECT
+          sp.Description                              AS product,
+          spp.product_code                            AS product_code,
+          spp.PricingSeasonCode                       AS pricing_season_code,
+          ps.Description                              AS pricing_season,
+          spp.price                                   AS price,
+          spp.price_allocation_ind                    AS price_allocation,
+          spp.discount_allocation_ind                 AS discount_allocation,
+          spp.commission_allocation_ind               AS commission_allocation,
+          spp.operator_id                             AS operator_id,
+          CONVERT(varchar, spp.update_date, 103)      AS update_date
+        FROM dbo.s_season_product_price spp
+        JOIN dbo.s_product sp ON sp.product_code = spp.product_code
+        JOIN dbo.PricingSeason ps ON ps.PricingSeasonCode = spp.PricingSeasonCode
+        WHERE spp.product_header_code = @phc
+        ORDER BY sp.Description, ps.Description
+      `,
+      LD: `
+        SELECT
+          l.Description                               AS sale_location,
+          spp.sale_location_code                      AS sale_location_code,
+          CONVERT(varchar, spp.effective_date,  103)  AS effective_date,
+          CONVERT(varchar, spp.expiration_date, 103)  AS expiration_date,
+          sp.Description                              AS product,
+          spp.product_code                            AS product_code,
+          spp.price                                   AS price,
+          spp.price_allocation_ind                    AS price_allocation,
+          spp.discount_allocation_ind                 AS discount_allocation,
+          spp.commission_allocation_ind               AS commission_allocation,
+          spp.operator_id                             AS operator_id,
+          CONVERT(varchar, spp.update_date, 103)      AS update_date
+        FROM dbo.s_date_range_location_product_price spp
+        JOIN dbo.s_product sp ON sp.product_code = spp.product_code
+        JOIN dbo.s_location l ON l.location_code = spp.sale_location_code
+        WHERE spp.product_header_code = @phc
+        ORDER BY l.Description, sp.Description, spp.effective_date
+      `,
+      LS: `
+        SELECT
+          l.Description                               AS sale_location,
+          spp.sale_location_code                      AS sale_location_code,
+          spp.PricingSeasonCode                       AS pricing_season_code,
+          ps.Description                              AS pricing_season,
+          sp.Description                              AS product,
+          spp.product_code                            AS product_code,
+          spp.price                                   AS price,
+          spp.price_allocation_ind                    AS price_allocation,
+          spp.discount_allocation_ind                 AS discount_allocation,
+          spp.commission_allocation_ind               AS commission_allocation,
+          spp.operator_id                             AS operator_id,
+          CONVERT(varchar, spp.update_date, 103)      AS update_date
+        FROM dbo.s_season_location_product_price spp
+        JOIN dbo.s_product sp ON sp.product_code = spp.product_code
+        JOIN dbo.s_location l ON l.location_code = spp.sale_location_code
+        JOIN dbo.PricingSeason ps ON ps.PricingSeasonCode = spp.PricingSeasonCode
+        WHERE spp.product_header_code = @phc
+        ORDER BY l.Description, ps.Description, sp.Description
+      `,
+    };
+
+    const result = await r.query(queries[pricingType]);
+    res.json({ pricingType, rows: result.recordset });
+  } catch (err) {
+    console.error('[pricing]', err);
+    next(err);
+  }
+});
+
+
+/** GET /api/products/:phc/sale-locations — all locations with assignment state for a PHC */
+router.get('/products/:phc/sale-locations', async (req, res, next) => {
+  try {
+    const { phc } = req.params;
+    const pool = await getPool();
+
+    // Look up the PHC's currency code to determine which locations to show:
+    //   0 or -1 (or missing) → all currencies
+    //   1                    → US Dollar locations only
+    //   2                    → Canadian Dollar locations only
+    const currReq = pool.request();
+    currReq.input('phc', sql.VarChar(50), phc);
+    const currResult = await currReq.query(`
+      SELECT CurrencyCode FROM dbo.s_product_header WHERE product_header_code = @phc
+    `);
+    const phcCurrency = currResult.recordset[0]?.CurrencyCode ?? null;
+    const filterByCurrency = phcCurrency !== null && phcCurrency !== 0 && phcCurrency !== -1;
+
+    const r = pool.request();
+    r.input('phc', sql.VarChar(50), phc);
+
+
+    const result = await r.query(`
+      SELECT
+        sl.location_code,
+        sl.description                                          AS location_desc,
+        sl.display_order,
+        ISNULL(CAST(sr.HomeCurrencyCode AS VARCHAR(20)), '')    AS currency_code,
+        ISNULL(c.Description, '')                               AS currency_label,
+        CASE WHEN sphl.sale_location_code IS NOT NULL THEN 1 ELSE 0 END AS assigned
+      FROM s_location sl
+      LEFT JOIN s_resort sr
+        ON sr.resort_code = sl.resort_code
+      LEFT JOIN Currency c
+        ON c.CurrencyCode = sr.HomeCurrencyCode
+      LEFT JOIN (
+        SELECT DISTINCT sale_location_code
+        FROM dbo.s_product_header_location
+        WHERE product_header_code = @phc
+      ) sphl ON sphl.sale_location_code = sl.location_code
+      WHERE sl.description NOT LIKE '%breakage%'
+        AND sl.description NOT LIKE '%balance sheet%'
+        AND sl.active_ind = 'Y'
+      ORDER BY sl.display_order, sl.description
+    `);
+
+    // Derive distinct currencies for the filter dropdown
+    const seen = new Set();
+    const currencies = [];
+    for (const row of result.recordset) {
+      if (row.currency_code && !seen.has(row.currency_code)) {
+        seen.add(row.currency_code);
+        currencies.push({ code: row.currency_code, label: row.currency_label || row.currency_code });
+      }
+    }
+
+        res.json({ locations: result.recordset, currencies, phcCurrency: filterByCurrency ? String(phcCurrency) : '' });
+  } catch (err) {
+    console.error('[sale-locations]', err);
+    next(err);
+  }
+});
+
+
+
 module.exports = router;
