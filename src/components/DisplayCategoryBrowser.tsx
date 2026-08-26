@@ -8,6 +8,7 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useBrowserData } from "../hooks/useBrowserData";
 import RowContextMenu from "./shared/RowContextMenu";
 import { newTabLabel } from "./shared/contextMenuNavActions";
+import { RovingList } from './shared/RovingList';
 
 
 type Category = {
@@ -269,7 +270,7 @@ export default function DisplayCategoryBrowser({
 
 
   const scrollCategoryIntoView = (categoryCode: string) => {
-    const el = document.getElementById(`cat-${categoryCode}`);
+    const el = document.getElementById(`cat-${encodeURIComponent(categoryCode)}`);
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
@@ -641,28 +642,31 @@ export default function DisplayCategoryBrowser({
         sidebar={
           <>
             <div className="pm-sidebar-title">Display Categories</div>
-            <div className="pm-sidebar-scroll">
-              {cats.map((c) => (
-                <button
-                  key={c.code}
-                  id={`cat-${c.code}`}
-                  onClick={() => handleSelectCategory(c.code)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelectCategory(c.code);
-                    setCatCtx({ x: e.clientX, y: e.clientY, cat: c });
-                  }}
-                  className={`pm-list-item ${selectedCat === c.code ? 'pm-list-item--active' : ''}`}
-                  title={`Open ${c.label} (${c.code})`}
-                >
-                  <div className="truncate">
-                    {c.label}
-                    <span className="ml-2 text-[11px] text-neutral-500">({c.code})</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <RovingList
+              items={cats}
+              getKey={(c) => c.code}
+              getSearchText={(c) => `${c.label} ${c.code}`}
+              selectedKey={selectedCat}
+              onSelect={(c) => handleSelectCategory(c.code)}
+              onContextMenu={(c, e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelectCategory(c.code);
+                setCatCtx({ x: e.clientX, y: e.clientY, cat: c });
+              }}
+              idPrefix="cat"
+              ariaLabel="Display Categories"
+              className="pm-sidebar-scroll"
+              itemClassName={(c, { selected }) =>
+                `pm-list-item ${selected ? 'pm-list-item--active' : ''}`
+              }
+              renderItem={(c) => (
+                <div className="truncate">
+                  {c.label}
+                  <span className="ml-2 text-[11px] text-neutral-500">({c.code})</span>
+                </div>
+              )}
+            />
           </>
         }
         searchPanel={

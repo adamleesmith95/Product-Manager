@@ -27,6 +27,8 @@ type RovingListProps<T> = {
   scrollBlock?: ScrollLogicalPosition; // "center" (default), "nearest", etc.
   /** How many items to move on PageUp/PageDown */
   pageJump?: number;
+  /** Called when user right-clicks an item */
+  onContextMenu?: (item: T, e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 const TYPE_AHEAD_RESET_MS = 600;
@@ -45,6 +47,7 @@ export function RovingList<T>({
   className,
   scrollBlock = "center",
   pageJump = 10,
+  onContextMenu,
 }: RovingListProps<T>) {
   const [focusedIdx, setFocusedIdx] = React.useState<number>(() => {
     if (!items.length) return -1;
@@ -154,9 +157,10 @@ export function RovingList<T>({
       for (let step = 1; step <= n; step++) {
         const i = (current + step) % n;
         const hay = `${getSearchText(items[i])}`;
-        if (norm(hay).includes(q)) {
+        if (norm(hay).startsWith(q)) {
           e.preventDefault();
           go(i);
+          onSelect(items[i]);
           break;
         }
       }
@@ -187,6 +191,7 @@ export function RovingList<T>({
             tabIndex={-1}
             onFocus={() => setFocusedIdx(i)}
             onClick={() => onSelect(item)}
+            onContextMenu={onContextMenu ? (e) => onContextMenu(item, e) : undefined}
             role="option"
             aria-selected={selected}
             className={cls}
