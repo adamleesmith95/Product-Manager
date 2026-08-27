@@ -102,14 +102,9 @@ export default function ManageProductComponent() {
   const handleClose = () => setDetail((s) => ({ ...s, open: false }));
 
   return (
-    <div className="w-full min-w-0 overflow-hidden">
+    <div className="h-full min-w-0">
       {USE_INLINE_PREVIEW && (
-        <div className="bg-white shadow-md rounded-md border border-gray-300 min-h-0">
-          {/* Header bar */}
-          <div className="flex items-center justify-between bg-indigo-950 px-4 py-2 rounded-t-md">
-            <h2 className="text-white text-lg font-semibold">Product Component Search</h2>
-          </div>
-
+        <ModalSessionProvider>
           <ProductComponentSearch
             onSelectProduct={(row: any) =>
               setSelectedProductCode(Number(row?.code ?? row?.productCode) || null)
@@ -117,7 +112,7 @@ export default function ManageProductComponent() {
             onOpenProduct={(row: any) => handleOpenProduct(row)}
             inlineDetailPanel={<ProductComponentInlinePanel productCode={selectedProductCode} />}
           />
-        </div>
+        </ModalSessionProvider>
       )}
 
       <Modal

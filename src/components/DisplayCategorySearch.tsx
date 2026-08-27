@@ -311,7 +311,7 @@ export default function DisplayCategorySearch({
           });
           console.log('[DCS] scrolled sidebar to', target, { elTop, sidebarHeight });
         } else {
-          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
         pendingScrollGroupRef.current = '';
       } else if (attemptsLeft > 0) {
@@ -360,7 +360,7 @@ export default function DisplayCategorySearch({
       for (const sel of selectors) {
         const el = document.querySelector(sel);
         if (el) {
-          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           console.log('[DCS] scrolled row into view via', sel, target);
           pendingScrollCategoryRef.current = '';
           found = true;

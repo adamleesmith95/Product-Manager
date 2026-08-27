@@ -152,7 +152,7 @@ export default function ProductComponentSearch({
 
   const scrollCategoryIntoView = (categoryCode) => {
     const el = document.getElementById(`pc-cat-${categoryCode}`);
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
 
     const scrollRowIntoView = (code) => {
@@ -163,7 +163,7 @@ export default function ProductComponentSearch({
   const attempt = (attemptsLeft) => {
   const el = document.querySelector(selector);
   if (el) {
-  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   return;
   }
   if (attemptsLeft > 0) {

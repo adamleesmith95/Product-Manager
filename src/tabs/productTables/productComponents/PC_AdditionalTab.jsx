@@ -96,6 +96,8 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
 
       {/* Left Column */}
       <div className="space-y-4 pc-label-col-addl-left">
+        <LabeledSelect
+          label="CRM Customer Type"
           options={crmCustomerTypes}
           {...bindSelect('crmCustomerType', crmCustomerTypes)} />
 
@@ -137,6 +139,8 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
 
       {/* Right Column */}
       <div className="space-y-4 pc-label-col-addl-right">
+        <LabeledSelect
+          label="Customer Property Set"
           options={customerPropertySets}
           {...bindSelect('customerPropertySet', customerPropertySets)} />
 

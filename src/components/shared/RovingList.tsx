@@ -45,7 +45,7 @@ export function RovingList<T>({
   ariaLabel = "List",
   idPrefix = "item",
   className,
-  scrollBlock = "center",
+  scrollBlock = "nearest",
   pageJump = 10,
   onContextMenu,
 }: RovingListProps<T>) {

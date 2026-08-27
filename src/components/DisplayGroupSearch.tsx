@@ -135,7 +135,7 @@ export default function DisplayGroupSearch({
       for (const sel of selectors) {
         const el = document.querySelector(sel);
         if (el) {
-          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           appliedAnchorTsRef.current = ts; // mark applied only after successful scroll
           return;
         }
