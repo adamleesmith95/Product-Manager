@@ -3,8 +3,8 @@ import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useBrowserData } from '../hooks/useBrowserData';
 import PaneHeader from './shared/PaneHeader';
-import PaneActions from './shared/PaneActions';
 import SearchToolbar from './shared/SearchToolbar';
+import SearchActionButtons from './shared/SearchActionButtons';
 import { resetTableColumns } from '../utils/tableStorage';
 import RowContextMenu from './shared/RowContextMenu';
 import { newTabLabel } from './shared/contextMenuNavActions';
@@ -135,7 +135,7 @@ export default function DisplayGroupSearch({
       for (const sel of selectors) {
         const el = document.querySelector(sel);
         if (el) {
-          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           appliedAnchorTsRef.current = ts; // mark applied only after successful scroll
           return;
         }
@@ -174,7 +174,11 @@ export default function DisplayGroupSearch({
           />
         }
         searchPanel={
-          <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+          <SearchToolbar
+            onSearch={handleSearch}
+            onClear={handleClear}
+            rightActions={<SearchActionButtons includeClone={false} />}
+          >
             <input
               type="text"
               name="code"
@@ -191,7 +195,7 @@ export default function DisplayGroupSearch({
               value={filters.description}
               onChange={handleChange}
               onKeyDown={onKeyDownBasic}
-              className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+              className="col-span-9 w-full h-10 px-3 py-2 pmsearch"
             />
           </SearchToolbar>
         }
@@ -226,7 +230,6 @@ export default function DisplayGroupSearch({
             />
           </div>
         }
-        paneFooter={<PaneActions onNew={onNew} onClone={onClone} />}
       />
 
       {groupCtx && (

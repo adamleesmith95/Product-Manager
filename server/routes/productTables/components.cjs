@@ -1,7 +1,7 @@
 // server/routes/productTables/components.cjs
 const express = require('express');
 const router = express.Router();
-const { sql , getPool } = require('../../db/pool.cjs');
+const { getPool } = require('../../db/pool.cjs');
 
 router.get('/components/tree', async (req, res, next) => {
   try {
@@ -82,10 +82,11 @@ router.get('/components/tree', async (req, res, next) => {
           ISNULL(pcps.customerpropertysetcode, '0') AS component_customer_property_set_code,
           cps.description AS component_customer_property_set,
 
-          sl.lob_code AS lob_code,
-          sl.description AS lob_desc
-
+          spg.lob_code              AS group_lob_code,
+          slob.description          AS group_lob_desc
       FROM s_product_group spg
+      LEFT JOIN s_lob slob
+          ON slob.lob_code = spg.lob_code
       JOIN s_product_category spc
           ON spg.product_group_code = spc.product_group_code
          AND spg.active_ind = 'Y'
@@ -138,7 +139,6 @@ router.get('/components/tree', async (req, res, next) => {
          ON sp.product_code = pcps.productcode
       LEFT JOIN CustomerPropertySet cps
          ON pcps.CustomerPropertySetCode = cps.CustomerPropertySetCode
-        JOIN s_lob sl on spg.lob_code = sl.lob_code
       ORDER BY
           spg.display_order,
           spg.product_group_code,
@@ -161,8 +161,8 @@ router.get('/components/tree', async (req, res, next) => {
           groupCode: r.product_group_code,
           label: r.product_group_desc,
           order: r.product_group_order,
-          lobCode: r.lob_code,
-          lobLabel: r.lob_desc,
+          lobCode: r.group_lob_code ?? null,
+          lobLabel: r.group_lob_desc ?? null,
           categories: [],
           _catMap: new Map(),
         };
@@ -231,8 +231,6 @@ router.get('/components/tree', async (req, res, next) => {
         deferral_calendar: r.component_deferral_calendar,
         customer_property_set_code: r.component_customer_property_set_code,
         customer_property_set: r.component_customer_property_set,
-        lob_code: r.lob_code,
-        lob_desc: r.lob_desc,
       });
     }
 
@@ -246,100 +244,6 @@ router.get('/components/tree', async (req, res, next) => {
     next(err);
   }
 });
-
-router.get('/product-components/search', async (req, res, next) => {
-  try {
-    const { lobCode, groupCode, categoryCode, active, q } = req.query;
-    const pool = await getPool();
-    const request = pool.request();
-    const conditions = [];
-
-    if (lobCode) {
-      request.input('lobCode', sql.VarChar(50), String(lobCode));
-      conditions.push('sl.lob_code = @lobCode');
-      }
-
-    if (groupCode) {
-      request.input('groupCode', sql.VarChar(50), String(groupCode));
-      conditions.push('spg.product_group_code = @groupCode');
-    }
-    if (categoryCode) {
-      request.input('categoryCode', sql.VarChar(50), String(categoryCode));
-      conditions.push('spc.product_category_code = @categoryCode');
-    }
-    if (active) {
-      request.input('active', sql.VarChar(1), String(active));
-      conditions.push('sp.active_ind = @active');
-    }
-    if (q && String(q).trim()) {
-      request.input('q', sql.NVarChar(200), `%${String(q).trim()}%`);
-      conditions.push("(sp.description LIKE @q OR CAST(sp.product_code AS VARCHAR) LIKE @q)");
-    }
-
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const result = await request.query(`
-      SELECT
-        sp.product_code                              AS code,
-        sp.description                               AS label,
-        sp.active_ind,
-        sp.display_ind,
-        sp.display_order                             AS [order],
-        spc.product_category_code,
-        spc.description                              AS product_category_desc,
-        spg.product_group_code,
-        spg.description                              AS product_group_desc,
-        sppt.product_profile_type_code,
-        sppt.description                             AS product_profile_type,
-        sp.deferral_pattern_code,
-        sdp.description                              AS deferral_pattern,
-        sp.units,
-        sp.revenue_report_ind,
-        sp.change_revenue_location_ind,
-        sp.sales_units                               AS sale_units,
-        ISNULL(spip.InventoryPoolCode, '0')          AS inventory_pool_code,
-        ip.Description                               AS inventory_pool,
-        spip.offline_freesell_ind,
-        sp.sales_statistic_code,
-        ss.Description                               AS sales_statistic,
-        ISNULL(spros.RosterCode, '0')                AS roster_code,
-        ros.Description                              AS roster,
-        ISNULL(slpp.lift_product_type_code, '0')     AS lift_product_type_code,
-        slpt.description                             AS lift_product_type,
-        slpp.lift_charge_ind,
-        slpp.load_to_media_ind,
-        CONVERT(varchar, slpp.effective_date, 103)   AS lift_effective_date,
-        slpp.expiration_type                         AS lift_expiration_type,
-        slpp.expiration_days                         AS lift_expiration_days,
-        CONVERT(varchar, slpp.expiration_date, 103)  AS lift_expiration_date,
-        sp.operator_id,
-        CONVERT(varchar, sp.update_date, 103)        AS update_date,
-        sl.lob_code                                 AS lob_code,
-        sl.description                               AS lob_desc
-      FROM s_product sp
-      JOIN s_product_category spc  ON sp.product_category_code  = spc.product_category_code
-      JOIN s_product_group spg     ON spc.product_group_code    = spg.product_group_code
-      JOIN s_product_profile_type sppt ON sp.product_profile_type_code = sppt.product_profile_type_code
-      JOIN s_deferral_pattern sdp  ON sp.deferral_pattern_code  = sdp.deferral_pattern_code
-      LEFT JOIN s_product_inventory_pool spip ON sp.product_code = spip.product_code
-      LEFT JOIN InventoryPool ip            ON spip.InventoryPoolCode = ip.InventoryPoolCode
-      LEFT JOIN s_product_roster spros      ON sp.product_code = spros.product_code
-      LEFT JOIN roster ros                  ON spros.RosterCode = ros.RosterCode
-      LEFT JOIN s_statistic ss              ON sp.sales_statistic_code = ss.statistic_code
-      LEFT JOIN s_lift_product_profile slpp ON sp.product_code = slpp.product_code
-      LEFT JOIN s_lift_product_type slpt    ON slpp.lift_product_type_code = slpt.lift_product_type_code
-      JOIN s_lob sl on spg.lob_code = sl.lob_code
-      ${where}
-      ORDER BY spg.display_order, spc.display_order, sp.display_order, sp.description
-    `);
-
-    res.json({ rows: result.recordset });
-  } catch (err) {
-    next(err);
-  }
-});
-
-
 
 router.get('/product-components/:productCode/general', async (req, res, next) => {
   try {
@@ -393,7 +297,6 @@ router.get('/product-components/:productCode/phcs', async (req, res, next) => {
         sph.product_header_code AS productHeaderCode,
         sph.description AS productHeaderDescription,
         sph.active_ind AS productHeaderActive,
-        sph.display_category_code AS displayCategoryCode,
         sp.product_code AS productCode,
         sp.description AS productDescription,
         sp.active_ind AS productActive

@@ -45,7 +45,7 @@ export function RovingList<T>({
   ariaLabel = "List",
   idPrefix = "item",
   className,
-  scrollBlock = "center",
+  scrollBlock = "nearest",
   pageJump = 10,
   onContextMenu,
 }: RovingListProps<T>) {
@@ -105,6 +105,7 @@ export function RovingList<T>({
     const go = (idx: number) => {
       const bounded = Math.max(0, Math.min(items.length - 1, idx));
       focusItem(bounded);
+      if (bounded !== current) onSelect(items[bounded]);
     };
 
     switch (e.key) {

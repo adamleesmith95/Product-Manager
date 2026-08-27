@@ -102,14 +102,9 @@ export default function ManageProductComponent() {
   const handleClose = () => setDetail((s) => ({ ...s, open: false }));
 
   return (
-    <div className="w-full min-w-0 overflow-hidden">
+    <div className="h-full min-w-0">
       {USE_INLINE_PREVIEW && (
-        <div className="bg-white shadow-md rounded-md border border-gray-300 min-h-0">
-          {/* Header bar */}
-          <div className="flex items-center justify-between bg-indigo-950 px-4 py-2 rounded-t-md">
-            <h2 className="text-white text-lg font-semibold">Product Component Search</h2>
-          </div>
-
+        <ModalSessionProvider>
           <ProductComponentSearch
             onSelectProduct={(row: any) =>
               setSelectedProductCode(Number(row?.code ?? row?.productCode) || null)
@@ -117,7 +112,7 @@ export default function ManageProductComponent() {
             onOpenProduct={(row: any) => handleOpenProduct(row)}
             inlineDetailPanel={<ProductComponentInlinePanel productCode={selectedProductCode} />}
           />
-        </div>
+        </ModalSessionProvider>
       )}
 
       <Modal
@@ -171,5 +166,80 @@ export default function ManageProductComponent() {
         </ModalSessionProvider>
       </Modal>
     </div>
+  );
+}
+
+// ── Reusable browser ───────────────────────────────────────────────────────────
+// Embed this inside a BrowserModal or any context that needs the PC browser
+// without the full page chrome.
+export function ProductComponentBrowser({ initialFocusCode = '' }: { initialFocusCode?: string }) {
+  const [selectedProductCode, setSelectedProductCode] = React.useState<number | null>(null);
+  const [detail, setDetail] = React.useState({
+    open: false,
+    productCode: null as number | null,
+    productDescription: '',
+  });
+  const [activeTab, setActiveTab] = React.useState('general');
+  const [form, setForm] = React.useState<Record<string, any>>({});
+
+  const handleSelectProduct = (row: any) => {
+    const code = Number(row?.code ?? row?.productCode);
+    setSelectedProductCode(Number.isFinite(code) ? code : null);
+  };
+
+  const handleOpenProduct = (row: any) => {
+    const code = Number(row?.code ?? row?.productCode);
+    const description = String(row?.description ?? row?.label ?? row?.name ?? '');
+    setActiveTab('general');
+    setDetail({ open: true, productCode: Number.isFinite(code) ? code : null, productDescription: description });
+  };
+
+  const handleClose = () => setDetail(s => ({ ...s, open: false }));
+
+  function update(key: string, value: any) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
+
+  return (
+    <>
+      <ModalSessionProvider>
+        <ProductComponentSearch
+          onSelectProduct={handleSelectProduct}
+          onOpenProduct={handleOpenProduct}
+          componentAnchorCode={initialFocusCode}
+          inlineDetailPanel={<ProductComponentInlinePanel productCode={selectedProductCode} />}
+        />
+      </ModalSessionProvider>
+
+      <Modal
+        open={detail.open}
+        onClose={handleClose}
+        title={
+          detail.productCode != null
+            ? `Manage Product Component — ${detail.productDescription || 'Product Component'} (${detail.productCode})`
+            : 'Manage Product Component'
+        }
+        headerClassName="pcphc-modal-header"
+        titleClassName="pcphc-modal-title"
+        panelClassName="pcphc-modal-panel"
+      >
+        <ModalSessionProvider>
+          <div className="pm-tab-host">
+            <div className="pm-tabs-row">
+              <ModalTabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')}>General</ModalTabButton>
+              <ModalTabButton active={activeTab === 'additional'} onClick={() => setActiveTab('additional')}>Additional</ModalTabButton>
+            </div>
+            <div className="pm-tab-body pm-form-shell">
+              {activeTab === 'general' && (
+                <PC_GeneralTab productCode={detail.productCode} isActive form={form} update={update} />
+              )}
+              {activeTab === 'additional' && (
+                <PC_AdditionalTab productCode={detail.productCode} isActive form={form} update={update} />
+              )}
+            </div>
+          </div>
+        </ModalSessionProvider>
+      </Modal>
+    </>
   );
 }

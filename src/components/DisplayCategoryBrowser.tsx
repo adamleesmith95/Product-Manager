@@ -256,7 +256,7 @@ export default function DisplayCategoryBrowser({
   const attempt = (attemptsLeft: number) => {
   const el = document.querySelector(selector) as HTMLElement | null;
   if (el) {
-  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   return;
   }
   if (attemptsLeft > 0) {
@@ -271,7 +271,7 @@ export default function DisplayCategoryBrowser({
 
   const scrollCategoryIntoView = (categoryCode: string) => {
     const el = document.getElementById(`cat-${encodeURIComponent(categoryCode)}`);
-    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   };
 
   // ---------- Restore sticky last category ----------
@@ -727,12 +727,6 @@ export default function DisplayCategoryBrowser({
             emptyMessage={isResultsMode ? searchTitle : 'No products found'}
             loading={tableLoading}
           />
-        }
-        paneFooter={
-          <>
-            <button className="btn btn-light">New</button>
-            <button className="btn btn-light">Clone</button>
-          </> 
         }
       />
 

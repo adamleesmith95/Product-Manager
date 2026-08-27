@@ -2,13 +2,17 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import DualPane from '../../../components/shared/DualPane';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import { useModalSession } from '../../../context/ModalSessionContext';
+import { ModalSessionProvider } from '../../../context/ModalSessionContext';
 import RowContextMenu from '../../../components/shared/RowContextMenu';
 import { newTabLabel } from '../../../components/shared/contextMenuNavActions';
 import PaneSearchBar from '../../../components/shared/PaneSearchBar';
 import Modal from '../../../components/Modal';
+import ModalTabButton from '../../../components/shared/ModalTabButton';
 import { useBrowserModal } from '../../../hooks/useBrowserModal';
 import BrowserModal from '../../../components/shared/BrowserModal';
 import { ProductComponentBrowser } from '../../../pages/ManageProductComponent';
+import PC_GeneralTab from '../productComponents/PC_GeneralTab';
+import PC_AdditionalTab from '../productComponents/PC_AdditionalTab';
 
 
 // -------------------------------------------------------------
@@ -133,8 +137,48 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
 
   // simple context menu for right-click on Assigned
   const [menu, setMenu] = useState({ open: false, x: 0, y: 0 });
-    const [modifyModalCode, setModifyModalCode] = useState(null);
-        const pcModal = useBrowserModal();
+  const pcModal = useBrowserModal();
+
+  // Compact PC detail modal (General + Additional tabs only)
+  const EMPTY_PC = {
+    productCode: null, description: '', productCategoryCode: '', productCategory: '',
+    displayOrder: null, productProfileTypeCode: '', productProfileType: '',
+    units: '', salesUnits: '', paymentDate: null, reference: '',
+    deferralPatternCode: '', deferralPattern: '', operatorId: '', updateDate: null,
+    active: false, display: false, changeRevenueLocation: false,
+    crmCustomerTypeCode: '', crmCustomerType: '', crmProductCategoryCode: '', crmProductCategory: '',
+    crmProductCode: '', crmProduct: '', inventoryPoolCode: '', inventoryPool: '',
+    revenueStatisticCode: '', revenueStatistic: '', rosterCode: '', roster: '',
+    salesStatisticCode: '', salesStatistic: '', deferralCalendarCode: '', deferralCalendar: '',
+    customerPropertySetCode: '', customerPropertySet: '',
+    revenueLocationOverrideCategoryCode: '', revenueLocationOverrideCategory: '',
+    crmEvent: false, onlineHotlist: false, reportRevenue: false,
+    printAcademyLabels: false, offlineFreeSell: false,
+  };
+  const [modifyDetail, setModifyDetail] = useState({ open: false, code: null, desc: '' });
+  const [modifyTab, setModifyTab] = useState('general');
+  const [modifyForm, setModifyForm] = useState(EMPTY_PC);
+  const updateModifyForm = (key, value) => setModifyForm(prev => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    if (!modifyDetail.code) return;
+    fetch(`/api/product-components/${modifyDetail.code}/general`)
+      .then(r => r.json())
+      .then(json => {
+        const row = json?.row ?? {};
+        setModifyForm({
+          ...EMPTY_PC, ...row,
+          active: row.active === 'Y',
+          display: row.display === 'Y',
+          changeRevenueLocation: row.changeRevenueLocation === 'Y',
+          crmEvent: row.crmEvent === 'Y',
+          onlineHotlist: row.onlineHotlist === 'Y',
+          reportRevenue: row.reportRevenue === 'Y',
+          printAcademyLabels: row.printAcademyLabels === 'Y',
+          offlineFreeSell: row.offlineFreeSell === 'Y',
+        });
+      });
+  }, [modifyDetail.code]);
 
   // ── Search ───────────────────────────────────────────────────
   const [appliedSearch, setAppliedSearch] = useState({ code: '', desc: '' });
@@ -378,22 +422,27 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
           y={menu.y}
           actions={[
             {
-              key: 'modify-new-tab',
-              label: newTabLabel('Modify'),
+              key: 'modify',
+              label: 'Modify...',
               onClick: () => {
-                openModifyForAssignedSelection();
+                const target = assigned[assignSelection[0]];
+                if (target) {
+                  setModifyTab('general');
+                  setModifyForm(EMPTY_PC);
+                  setModifyDetail({ open: true, code: target.component_code, desc: target.component_desc ?? '' });
+                }
                 setMenu(m => ({ ...m, open: false }));
               },
             },
-                        {
-            key: 'modify-panel',
-            label: 'Modify...',
-            onClick: () => {
-              const target = assigned[assignSelection[0]];
-              if (target) pcModal.openModal(String(target.component_code));
-              setMenu(m => ({ ...m, open: false }));
+            {
+              key: 'modify-new-tab',
+              label: newTabLabel('Manage Product Component'),
+              onClick: () => {
+                const target = assigned[assignSelection[0]];
+                if (target) window.open(`/product-manager/manage-product-component?focusComponentCode=${encodeURIComponent(target.component_code)}`, '_blank');
+                setMenu(m => ({ ...m, open: false }));
+              },
             },
-          },
           ]}
         />
       )}
@@ -470,18 +519,6 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
                       </div>
                     ))}
 
-                                        <Modal
-                      open={!!modifyModalCode}
-                      onClose={() => setModifyModalCode(null)}
-                      title={modifyModalCode ? `Manage Product Component (${modifyModalCode})` : 'Manage Product Component'}
-                      headerClassName="pcphc-modal-header"
-                      titleClassName="pcphc-modal-title"
-                      panelClassName="pcphc-modal-panel"
-                    >
-                      {modifyModalCode && (
-                        <ProductComponentBrowser key={modifyModalCode} initialFocusCode={modifyModalCode} />
-                      )}
-                    </Modal>
                 </div>
               ))
             )}
@@ -514,7 +551,34 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
         }
       />
 
-            <BrowserModal
+            {/* Compact PC detail modal — General + Additional tabs only */}
+      <Modal
+        open={modifyDetail.open}
+        onClose={() => setModifyDetail(s => ({ ...s, open: false }))}
+        title={modifyDetail.code ? `Manage Product Component — ${modifyDetail.desc || 'Component'} (${modifyDetail.code})` : 'Manage Product Component'}
+        headerClassName="pcphc-modal-header"
+        titleClassName="pcphc-modal-title"
+        panelClassName="pcphc-modal-panel"
+      >
+        <ModalSessionProvider>
+          <div className="pm-tab-host">
+            <div className="pm-tabs-row">
+              <ModalTabButton active={modifyTab === 'general'} onClick={() => setModifyTab('general')}>General</ModalTabButton>
+              <ModalTabButton active={modifyTab === 'additional'} onClick={() => setModifyTab('additional')}>Additional</ModalTabButton>
+            </div>
+            <div className="pm-tab-body pm-form-shell">
+              {modifyTab === 'general' && (
+                <PC_GeneralTab productCode={modifyDetail.code} isActive={modifyTab === 'general'} form={modifyForm} update={updateModifyForm} />
+              )}
+              {modifyTab === 'additional' && (
+                <PC_AdditionalTab productCode={modifyDetail.code} isActive={modifyTab === 'additional'} form={modifyForm} update={updateModifyForm} />
+              )}
+            </div>
+          </div>
+        </ModalSessionProvider>
+      </Modal>
+
+      <BrowserModal
         open={pcModal.open}
         onClose={pcModal.closeModal}
         title={pcModal.focusCode ? `Manage Product Component (${pcModal.focusCode})` : 'Manage Product Component'}

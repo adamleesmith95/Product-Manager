@@ -154,7 +154,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   };
 
   return (
-    <div className="relative" aria-busy={loading}>
+    <div className="relative min-h-[90px]" aria-busy={loading}>
       <table className={`pm-table ${className}`} ref={tableRef}>
         {/* Remove the style prop entirely - let CSS handle table-layout */}
         {ColGroup}
