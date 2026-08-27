@@ -1,14 +1,13 @@
 /* eslint-disable no-console */
 require('dotenv').config();
 
-/** Verify DB connectivity on startup */
-const { getPool } = require('./db/pool.cjs');
+/** Verify DB connectivity on startup (non-fatal — user can switch via UI) */
+const { getPool, switchServer, getCurrentServerKey, SERVERS } = require('./db/pool.cjs');
 getPool()
-  .then(() => console.log('DB connected'))
+  .then(() => console.log(`DB connected (${getCurrentServerKey()})`)) 
   .catch((err) => {
-    console.error('DB connect failed:', err);
-    if (err?.originalError) console.error('originalError:', err.originalError);
-    process.exit(1);
+    console.warn(`DB connect failed for "${getCurrentServerKey()}" — server stays up so you can switch via the UI.`);
+    if (err?.originalError) console.warn('originalError:', err.originalError);
   });
 
 /** Express setup */
@@ -30,6 +29,33 @@ app.use('/api', productsRoutes);
 app.use('/api', displayCategoriesRoutes);
 app.use('/api/display-groups', displayGroupsRoutes);
 app.use('/api', lookupProductsRoutes);
+
+/** DB server selector */
+app.get('/api/db-server', (_req, res) => {
+  res.json({ serverKey: getCurrentServerKey(), servers: Object.keys(SERVERS) });
+});
+
+app.post('/api/db-server', (req, res) => {
+  const { serverKey } = req.body;
+  if (!SERVERS[serverKey]) {
+    return res.status(400).json({ error: `Unknown server key: ${serverKey}` });
+  }
+  try {
+    switchServer(serverKey);
+    console.log(`Switched DB to ${serverKey}`);
+    res.json({ serverKey });
+  } catch (err) {
+    console.error('DB switch failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** JSON error handler — must come after routes, before static/SPA fallback */
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  console.error('API error:', err.message);
+  res.status(err.status ?? 500).json({ error: err.message || 'Internal server error' });
+});
 
 const path = require("path");
 

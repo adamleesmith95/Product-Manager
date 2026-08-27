@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useModalSession } from './context/ModalSessionContext';
 import ModalTabButton from './components/shared/ModalTabButton';
+import { useModalCachedFetch } from './hooks/useModalCachedFetch';
 
 // Modularized tab views
 import GeneralTab from './tabs/productTables/productsForSale/GeneralTab';
@@ -16,6 +17,7 @@ import AutoRenewTab from './tabs/productTables/productsForSale/AutoRenewTab';
 import DisplayCategoryGroupingTab from './tabs/productTables/productsForSale/DisplayCategoryGroupingTab';
 import SalesModulesTab from './tabs/productTables/productsForSale/SalesModulesTab';
 import AttributesTab from './tabs/productTables/productsForSale/AttributesTab';
+
 
 const topTabs = ['General', 'Locations' , 'Components', 'Accounting' , 'Pricing' , 'Prompts' , 
   'Properties', 'LinkedPHC', 'Comments' , 'AutoRenew' , 'Grouping' , 'Modules', //'AutoApplied' , 
@@ -156,40 +158,25 @@ export default function ManageProductsForSale({ product, onClose }) {
     ''
   );
 
-  // Prefetch product components
-  useEffect(() => {
-    if (!phc) return;
-    const key = `product-components-${phc}`;
-    if (getDataCache(key)) return;
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      fetch(`${API_BASE}/api/components/tree`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data) setDataCache(treeKey, data); })
-        .catch(() => {});
-    }, []); // empty deps — once on mount
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-
-        // Prefetch components tree (once per session — safety net for direct double-click)
-    useEffect(() => {
-      const treeKey = 'components-tree';
-      if (getDataCache(treeKey)) return;
-      
-
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    fetch(`${API_BASE}/api/products/${phc}/components`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setDataCache(key, data))
-      .catch(() => {});
-  }, [phc]);
-
-  if (!product) {
-    return (
-      <div className="p-4 text-sm text-neutral-600">
-        No product selected. Please return to the Display Categories view.
-      </div>
-    );
-  }
+  useModalCachedFetch(
+    'components-tree',
+    async () => {
+      const res = await fetch(`${API_BASE}/api/components/tree`);
+      return res.ok ? res.json() : null;
+    },
+    true
+  );
+  useModalCachedFetch(
+    `product-components-${phc}`,
+    async () => {
+      const res = await fetch(`${API_BASE}/api/products/${phc}/components`);
+      return res.ok ? res.json() : [];
+    },
+    !!phc
+  );
 
   return (
   <div className="flex flex-col h-full min-h-0 overflow-hidden">
@@ -211,11 +198,12 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       <div className="h-full min-h-0 overflow-auto p-4">
        {(topTab === 'General') && <GeneralTab form={form} update={update} />}
       {(topTab === 'Locations' || topTab === 'Sale Locations') && <SaleLocationsTab form={form} update={update} productPhc={phc} />}
-      {(topTab === 'Components' || topTab === 'Product Components') && (
-        <div className="h-full min-h-0 overflow-hidden">
-          <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
-        </div>
-      )}
+            <div
+        className="h-full min-h-0 overflow-hidden"
+        style={{ display: (topTab === 'Components' || topTab === 'Product Components') ? '' : 'none' }}
+      >
+        <ProductComponentsTab productPhc={phc} onComponentsChanged={() => {}} />
+      </div>
       {(topTab === 'Accounting') && <AccountingTab form={form} update={update} productPhc={phc} />}
       {(topTab === 'Pricing' || topTab === 'Product Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
       {(topTab === 'Properties') && <PropertiesTab form={form} update={update} />}

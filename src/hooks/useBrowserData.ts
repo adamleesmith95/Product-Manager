@@ -6,7 +6,7 @@ export function useBrowserData<T>(
 ) {
   const seqRef = useRef(0);
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {

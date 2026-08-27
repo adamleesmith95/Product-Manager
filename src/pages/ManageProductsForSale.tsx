@@ -8,6 +8,7 @@ import { ModalSessionProvider, useModalSession } from '../context/ModalSessionCo
 import ModalTabButton from '../components/shared/ModalTabButton';
 import DC_GeneralTab from '../tabs/productTables/displayCategory/DC_GeneralTab';
 import { normalizeCode, normalizeDescription, withNavTs } from '../utils/navInterop';
+import { useModalCachedFetch } from '../hooks/useModalCachedFetch';
 
 type ProductRow = {
   code: string;
@@ -23,29 +24,22 @@ type ProductRow = {
 type DetailState = { open: boolean; product?: ProductRow };
 type DC_DetailState = { open: boolean; code: string | null; description?: string };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 function PrefetchWarmup({ phcCode }: { phcCode: string }) {
-  const { getDataCache, setDataCache } = useModalSession();
-  useEffect(() => {
-    // Warm the components tree once per session
-    const treeKey = 'components-tree';
-    if (!getDataCache(treeKey)) {
-      fetch(`${API_BASE}/api/components/tree`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data) setDataCache(treeKey, data); })
-        .catch(() => {});
-    }
-    // Warm assigned components for the hovered/clicked PHC
-    if (!phcCode) return;
-    const compKey = `product-components-${phcCode}`;
-    if (!getDataCache(compKey)) {
-      fetch(`${API_BASE}/api/products/${phcCode}/components`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data) setDataCache(compKey, data); })
-        .catch(() => {});
-    }
-  }, [phcCode]);
+  // These just warm the cache — return values intentionally ignored.
+  // Using useModalCachedFetch registers in the shared inFlight map so
+  // ProductComponentsTab joins the same request rather than firing a new one.
+  useModalCachedFetch(
+    'components-tree',
+    () => fetch(`${API_BASE}/api/components/tree`).then(r => r.ok ? r.json() : null),
+    true
+  );
+  useModalCachedFetch(
+    `product-components-${phcCode}`,
+    () => fetch(`${API_BASE}/api/products/${phcCode}/components`).then(r => r.ok ? r.json() : null),
+    !!phcCode
+  );
   return null;
 }
 
