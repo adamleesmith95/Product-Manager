@@ -63,7 +63,7 @@ font-size: 13px; /* was 16px browser default — drops everything ~1 size */
    * ────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center
-      rounded-md
+      rounded-sm
       px-4 py-2
       text-xs font-medium
       tracking-tight

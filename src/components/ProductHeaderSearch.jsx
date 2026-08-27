@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import SearchActionButtons from './shared/SearchActionButtons';
 
 /**
  * @typedef {Object} ProductHeaderSearchProps
@@ -94,32 +95,27 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
   };
 
   // NEW: single source of truth for the Search button disabled state
-  const isSearchDisabled = busy || isBasicEmpty();
+  const isSearchDisabled = busy || (!expanded && isBasicEmpty());
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // MAIN "Search" button — only runs when PHC or Description is present (independent of Advanced)
-  const handleSearch = () => {
-    if (isBasicEmpty()) {
-      // Optional: toast or UI hint here
-      return;
-    }
-    onSearch(filters);
-  };
-
-  // "Apply Advanced" — show confirm when criteria are empty
-  const handleApplyAdvanced = () => {
+  // REMOVE both handleSearch and handleApplyAdvanced, ADD this instead:
+const handleUnifiedSearch = () => {
+  if (expanded) {
     if (isAdvancedCriteriaEmpty()) {
       const proceed = window.confirm(
         "Search Criteria  - There is no search criteria selected, this could take a long time to complete the search. Are you sure you want to continue?"
       );
       if (!proceed) return;
     }
-    onSearch(filters);
-  };
+  } else {
+    if (isBasicEmpty()) return;
+  }
+  onSearch(filters);
+};
 
   // Clear — reset filters (DO NOT collapse Advanced)
   const handleClearAll = () => {
@@ -158,7 +154,7 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
     if (e.key === "Enter") {
       e.preventDefault();
       if (isBasicEmpty()) return; // guard still applies
-      handleSearch();
+      handleUnifiedSearch();
     } else if (e.key === "Escape") {
       setFilters((prev) => ({ ...prev, code: "", description: "" }));
     }
@@ -171,7 +167,7 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
   useEffect(() => {
     if (!expanded && !filters.code.trim() && descDebounceMs > 0) {
       if (descTimer.current) window.clearTimeout(descTimer.current);
-      descTimer.current = window.setTimeout(() => handleSearch(), descDebounceMs);
+      descTimer.current = window.setTimeout(() => handleUnifiedSearch(), descDebounceMs);
     }
     return () => {
       if (descTimer.current) window.clearTimeout(descTimer.current);
@@ -201,7 +197,7 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
             className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
           />
 
-          {/* Description (8/12) */}
+          {/* Description (9/12) */}
           <input
             type="text"
             name="description"
@@ -209,48 +205,8 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
             value={filters.description}
             onChange={handleChange}
             onKeyDown={onKeyDownBasic}
-            className="col-span-8 w-full h-10 px-3 py-2 pmsearch"
+            className="col-span-9 w-full h-10 px-3 py-2 pmsearch"
           />
-
-          {/* Search + Caret (1/12) */}
-          
-<div className="col-span-1 flex justify-end items-center">
-
-  {/* SEARCH button */}
-  <button
-    ref={searchBtnRef}
-    onClick={handleSearch}
-    disabled={isSearchDisabled}
-    aria-disabled={isSearchDisabled}
-    tabIndex={isSearchDisabled ? -1 : 0}
-    className={
-      `btn btn-light rounded-r-none ` +
-      (isSearchDisabled ? "opacity-60 cursor-not-allowed" : "")
-    }
-    title={isBasicEmpty() ? "Enter PHC or Description" : "Search"}
-  >
-    Search
-  </button>
-
-  {/* CARET button */}
-  <button
-    onClick={toggleAdvanced}
-    aria-expanded={expanded}
-    aria-controls="advanced-panel"
-    className="btn btn-light rounded-l-none px-3 flex items-center justify-center"
-    title={expanded ? "Hide advanced filters" : "Show advanced filters"}
-  >
-    <svg
-      className={`w-3 h-4 transition-transform ${expanded ? "rotate-180" : "rotate-0"}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-    >
-      <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
-    </svg>
-  </button>
-
-</div>
-
         </div>
 
         {/* Advanced panel */}
@@ -336,37 +292,58 @@ export default function ProductHeaderSearch({ onSearch, onClear, onExport, busy 
               />
             </div>
 
-            {/* Buttons row (advanced actions) */}
-            <div className="flex gap-2 ml-auto justify-between">
-              <div>
-                {/* confirm if empty */}
-                <button
-                  onClick={handleApplyAdvanced}
-                  disabled={busy}
-                  className="btn btn-light mr-2"
-                >
-                  Apply Advanced
-                </button>
-
-                {/* Clear keeps Advanced open and re-disables Search */}
-                <button
-                  onClick={handleClearAll}
-                  className="btn btn-light"
-                >
-                  Clear
-                </button>
-              </div>
-
-              <div>
-                <div className="flex gap-2 ml-auto">
-                  <button className="btn btn-light">Upload</button>
-                  <button className="btn btn-light">Export</button>
-                  <button className="btn btn-light">Unlock</button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
+
+        {/* Always-visible button row */}
+        <div className="flex gap-2 mt-4 justify-between">
+          <div className="flex items-center gap-0">
+            {/* Search split button */}
+            <button
+              ref={searchBtnRef}
+              onClick={handleUnifiedSearch}
+              disabled={isSearchDisabled}
+              aria-disabled={isSearchDisabled}
+              tabIndex={isSearchDisabled ? -1 : 0}
+              className={
+                `btn btn-light rounded-r-none ` +
+                (isSearchDisabled ? "opacity-60 cursor-not-allowed" : "")
+              }
+              title={!expanded && isBasicEmpty() ? "Enter PHC or Description" : "Search"}
+            >
+              Search
+            </button>
+
+            {/* Caret toggle */}
+            <button
+              onClick={toggleAdvanced}
+              aria-expanded={expanded}
+              aria-controls="advanced-panel"
+              className="btn btn-light rounded-l-none px-3 flex items-center justify-center"
+              title={expanded ? "Hide advanced filters" : "Show advanced filters"}
+            >
+              <svg
+                className={`w-3 h-4 transition-transform ${expanded ? "rotate-180" : "rotate-0"}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+              </svg>
+            </button>
+
+            {/* Clear */}
+            <button
+              onClick={handleClearAll}
+              className="btn btn-light ml-2"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            <SearchActionButtons />
+          </div>
+        </div>
       </div>
     </div>
   );

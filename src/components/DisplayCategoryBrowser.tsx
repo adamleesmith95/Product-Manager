@@ -728,12 +728,6 @@ export default function DisplayCategoryBrowser({
             loading={tableLoading}
           />
         }
-        paneFooter={
-          <>
-            <button className="btn btn-light">New</button>
-            <button className="btn btn-light">Clone</button>
-          </> 
-        }
       />
 
       {catCtx && (

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState, ReactNode} from 'react';
+import React, { useEffect, useMemo, useState, ReactNode} from 'react';
 import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
-import SearchToolbar from './shared/SearchToolbar';
+import SearchBarAdvanced from './shared/SearchBarAdvanced';
+import SearchActionButtons from './shared/SearchActionButtons';
 import PaneHeader from './shared/PaneHeader';
-import PaneActions from './shared/PaneActions';
 import { useBrowserData } from '../hooks/useBrowserData';
 import { resetTableColumns } from '../utils/tableStorage';
 
@@ -60,7 +60,6 @@ const COMPONENT_COLUMNS = [
   { key: 'customer_property_set', label: 'Customer Property Set', sortable: true },
   { key: 'operator_id', label: 'Operator ID', sortable: true },
   { key: 'update_date', label: 'Updated', sortable: true },
-  
 ];
 
 const TABLE_STORAGE_KEY = 'product-component-search';
@@ -87,6 +86,7 @@ export default function ProductComponentSearch({
   componentAnchorCode,
 }: Props) {
   const [filters, setFilters] = useState({ pc: '', description: '' });
+  const [advancedFilters, setAdvancedFilters] = useState({ lob: '', productGroup: '', productCategory: '', active: '' });
   const [tree, setTree] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -96,6 +96,59 @@ export default function ProductComponentSearch({
   const isResultsMode = !!searchTitle?.trim();
   const [resultRows, setResultRows] = useState([]);
   const [pendingAnchorCompCode, setPendingAnchorCompCode] = useState(null);
+
+  // Derive unique LOBs from the loaded tree (LOB lives at the product-group level)
+  const lobs = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const g of tree as any[]) {
+      if (g.lobCode && !seen.has(g.lobCode)) seen.set(g.lobCode, g.lobLabel ?? g.lobCode);
+    }
+    return Array.from(seen.entries()).map(([code, label]) => ({ code, label }));
+  }, [tree]);
+
+  // Derive unique product groups from the loaded tree
+  const productGroups = useMemo(() =>
+    tree.map((g: any) => ({ code: String(g.groupCode), label: String(g.label) })),
+    [tree]
+  );
+
+  // Cascade: categories for the selected group (or all categories if none selected)
+  const productCategories = useMemo(() => {
+    if (!advancedFilters.productGroup) {
+      return tree.flatMap((g: any) =>
+        (g.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label), groupCode: String(g.groupCode) }))
+      );
+    }
+    const g = tree.find((g: any) => String(g.groupCode) === advancedFilters.productGroup);
+    return (g?.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label), groupCode: String(g.groupCode) }));
+  }, [tree, advancedFilters.productGroup]);
+
+  // When LOB changes, reset product group and category if they no longer belong
+  useEffect(() => {
+    if (!advancedFilters.lob) return;
+    const g = (tree as any[]).find(g => String(g.groupCode) === advancedFilters.productGroup);
+    if (advancedFilters.productGroup && g && String(g.lobCode) !== advancedFilters.lob) {
+      setAdvancedFilters(f => ({ ...f, productGroup: '', productCategory: '' }));
+    }
+  }, [advancedFilters.lob, advancedFilters.productGroup, tree]);
+
+  // Clear category when group changes and current category no longer belongs
+  useEffect(() => {
+    if (!advancedFilters.productGroup || !advancedFilters.productCategory) return;
+    const still = productCategories.some(c => c.code === advancedFilters.productCategory);
+    if (!still) setAdvancedFilters(f => ({ ...f, productCategory: '' }));
+  }, [advancedFilters.productGroup, advancedFilters.productCategory, productCategories]);
+
+  // Product groups filtered by selected LOB
+  const filteredProductGroups = useMemo(() => {
+    if (!advancedFilters.lob) return productGroups;
+    return (tree as any[])
+      .filter(g => String(g.lobCode) === advancedFilters.lob)
+      .map(g => ({ code: String(g.groupCode), label: String(g.label) }));
+  }, [tree, productGroups, advancedFilters.lob]);
+
+  const isBasicEmpty = () => !filters.pc.trim() && !filters.description.trim();
+  const hasAdvancedFilters = () => !!(advancedFilters.lob || advancedFilters.productGroup || advancedFilters.productCategory || advancedFilters.active);
 
   const scrollCategoryIntoView = (categoryCode) => {
     const el = document.getElementById(`pc-cat-${categoryCode}`);
@@ -229,40 +282,32 @@ useEffect(() => {
   const handleSearch = () => {
     const pc = (filters.pc || '').trim();
     const desc = (filters.description || '').trim();
+    const { lob, productGroup, productCategory, active } = advancedFilters;
+    const advanced = !!(lob || productGroup || productCategory || active);
 
-    if (pc) {
+    // Exact-code match (no advanced filters) — navigate directly in tree
+    if (pc && !desc && !advanced) {
       const pcLower = pc.toLowerCase();
-      let found = null;
-      let foundGroup = null;
-      let foundCat = null;
-
+      let found = null, foundGroup = null, foundCat = null;
       outer: for (const g of tree) {
         for (const cat of (g.categories ?? [])) {
           for (const comp of (cat.components ?? [])) {
             if (String(comp.code ?? '').toLowerCase() === pcLower) {
-              found = comp;
-              foundGroup = g;
-              foundCat = cat;
+              found = comp; foundGroup = g; foundCat = cat;
               break outer;
             }
           }
         }
       }
-
       if (!found || !foundCat || !foundGroup) {
         setSelectedCompCode('');
         setResultRows([{ code: '', label: `No component found for "${pc}"` }]);
         setSearchTitle(`No results for "${pc}"`);
         return;
       }
-
       setSearchTitle('');
       setResultRows([]);
-      setExpandedGroups(prev => {
-        const next = new Set(prev);
-        next.add(foundGroup.groupCode);
-        return next;
-      });
+      setExpandedGroups(prev => { const next = new Set(prev); next.add(foundGroup.groupCode); return next; });
       setSelectedCategory(String(foundCat.categoryCode));
       setSelectedCompCode(String(found.code));
       onSelectProduct?.(found);
@@ -271,27 +316,30 @@ useEffect(() => {
       return;
     }
 
-    if (desc) {
-      const descTerm = desc.toLowerCase();
-      const flattened = [];
-
+    // Results mode — flatten tree and apply all active filters
+    if (pc || desc || advanced) {
+      const pcLower = pc.toLowerCase();
+      const descLower = desc.toLowerCase();
+      const flattened: any[] = [];
       for (const g of tree) {
+        if (productGroup && String(g.groupCode) !== productGroup) continue;
+          if (lob && String((g as any).lobCode) !== lob) continue;
         for (const cat of (g.categories ?? [])) {
+          if (productCategory && String(cat.categoryCode) !== productCategory) continue;
           for (const comp of (cat.components ?? [])) {
-            const label = String(comp.label ?? '');
-            if (label.toLowerCase().includes(descTerm)) {
-              flattened.push({
-                ...comp,
-                categoryCode: cat.categoryCode,
-                categoryLabel: cat.label,
-                groupCode: g.groupCode,
-                groupLabel: g.label,
-              });
-            }
+            if (pc && !String(comp.code ?? '').toLowerCase().includes(pcLower)) continue;
+            if (desc && !String(comp.label ?? '').toLowerCase().includes(descLower)) continue;
+            if (active && String(comp.active_ind ?? '') !== active) continue;
+            flattened.push({
+              ...comp,
+              categoryCode: cat.categoryCode,
+              categoryLabel: cat.label,
+              groupCode: g.groupCode,
+              groupLabel: g.label,
+            });
           }
         }
       }
-
       setSelectedCompCode('');
       setPendingAnchorCompCode(null);
       setResultRows(flattened);
@@ -303,96 +351,12 @@ useEffect(() => {
     setResultRows([]);
   };
 
-    const handleClear = () => {
+  const handleClear = () => {
     setFilters({ pc: '', description: '' });
-    setAdvFilters({ lobCode: '', groupCode: '', categoryCode: '', active: '', q: '' });
+    setAdvancedFilters({ lob: '', productGroup: '', productCategory: '', active: '' });
     setSearchTitle('');
     setResultRows([]);
     setSelectedCompCode('');
-  };
-  
-  // ── Advanced search ──────────────────────────────────────────────
-  const [advFilters, setAdvFilters] = useState({ lobCode: '', groupCode: '', categoryCode: '', active: '', q: '' });
-  const [advLoading, setAdvLoading] = useState(false);
-  
-  const isSearchDisabled = !filters.pc.trim() && !filters.description.trim();
-  
-    const advLobs = useMemo(() => {
-    const seen = new Set<string>();
-    const lobs: { code: string; label: string }[] = [];
-    for (const g of tree as any[]) {
-      const code = String(g.lobCode ?? '');
-      if (code && !seen.has(code)) {
-        seen.add(code);
-        lobs.push({ code, label: String(g.lobLabel ?? code) });
-      }
-    }
-    return lobs;
-  }, [tree]);
-  
-  const advGroups = useMemo(() => {
-    const groups = tree as any[];
-    const filtered = advFilters.lobCode
-      ? groups.filter(g => String(g.lobCode ?? '') === advFilters.lobCode)
-      : groups;
-    return filtered.map(g => ({ code: String(g.groupCode), label: String(g.label) }));
-  }, [tree, advFilters.lobCode]);
-  
-  const advCategories = useMemo(() => {
-    const groups = tree as any[];
-    const filteredGroups = advFilters.groupCode
-      ? groups.filter(g => String(g.groupCode) === advFilters.groupCode)
-      : advFilters.lobCode
-      ? groups.filter(g => String(g.lobCode ?? '') === advFilters.lobCode)
-      : groups;
-    return filteredGroups.flatMap(g =>
-      (g.categories ?? []).map((c: any) => ({ code: String(c.categoryCode), label: String(c.label) }))
-    );
-  }, [tree, advFilters.groupCode, advFilters.lobCode]);
-  
-  // Cascade: clear category if group changes and current category no longer belongs
-  useEffect(() => {
-    if (!advFilters.groupCode || !advFilters.categoryCode) return;
-    if (!advCategories.some(c => c.code === advFilters.categoryCode)) {
-      setAdvFilters(f => ({ ...f, categoryCode: '' }));
-    }
-  }, [advFilters.groupCode, advCategories]);
-
-    useEffect(() => {
-    if (!advFilters.lobCode || !advFilters.groupCode) return;
-    if (!advGroups.some(g => g.code === advFilters.groupCode)) {
-      setAdvFilters(f => ({ ...f, groupCode: '', categoryCode: '' }));
-    }
-  }, [advFilters.lobCode, advGroups]);
-  
-  const handleApplyAdvanced = async () => {
-    const { lobCode, groupCode, categoryCode, active, q } = advFilters;
-    if (!lobCode && !groupCode && !categoryCode && !active && !q.trim()) {
-      if (!window.confirm('No criteria entered. This will return all product components. Continue?')) return;
-    }
-    setAdvLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (lobCode) params.set('lobCode', lobCode);
-      if (groupCode) params.set('groupCode', groupCode);
-      if (categoryCode) params.set('categoryCode', categoryCode);
-      if (active) params.set('active', active);
-      if (q.trim()) params.set('q', q.trim());
-      const res = await fetch(`/api/product-components/search?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const rows = (data.rows ?? []) as any[];
-      setResultRows(rows);
-      setSearchTitle(`Results (${rows.length})`);
-      setSelectedCompCode('');
-      setPendingAnchorCompCode(null);
-    } catch (e) {
-      console.error('[PC Advanced Search]', e);
-      setResultRows([]);
-      setSearchTitle('Results (0)');
-    } finally {
-      setAdvLoading(false);
-    }
   };
 
   useEffect(() => {
@@ -430,15 +394,6 @@ useEffect(() => {
   const handleNew = () => {};
   const handleClone = () => {};
 
-  const paneFooter = (
-    <PaneActions
-      onNew={handleNew}
-      onClone={handleClone}
-      newLabel="New"
-      cloneLabel="Clone"
-    />
-  );
-
   return (
     <div className="bg-white shadow-md rounded-md border border-gray-300 overflow-hidden">
       <div className="flex items-center bg-indigo-950 px-4 py-2 rounded-t-md shrink-0">
@@ -450,12 +405,12 @@ useEffect(() => {
         <>
           <div className="pm-sidebar-title">Product Groups</div>
           <div className="pm-sidebar-scroll">
-            {loading && !tree.length ? (
-            <div className="flex justify-center items-center py-6">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400" />
-            </div>
-          ) : (
-            tree.map(group => {
+            {loading && tree.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              tree.map(group => {
               const open = expandedGroups.has(group.groupCode);
               return (
                 <div key={group.groupCode} className="mb-2">
@@ -492,80 +447,72 @@ useEffect(() => {
                   })}
                 </div>
               );
-            }))}
+            })
+          )}
           </div>
         </>
       }
-            searchPanel={
-        <SearchToolbar
+      searchPanel={
+        <SearchBarAdvanced
           onSearch={handleSearch}
           onClear={handleClear}
-          isSearchDisabled={isSearchDisabled}
-          onApplyAdvanced={handleApplyAdvanced}
-          applyAdvancedLoading={advLoading}
-          advancedChildren={
-            <div className="grid grid-cols-12 gap-4 items-end">
-                            <div className="col-span-3">
-                {/* <label className="block text-xs text-gray-600 mb-1">LOB</label> */}
-                <select
-                  value={advFilters.lobCode}
-                  onChange={e => setAdvFilters(f => ({ ...f, lobCode: e.target.value, groupCode: '', categoryCode: '' }))}
-                  className="w-full h-10 px-3 py-2 pmsearch"
-                >
-                  <option value="">LOB</option>
-                  {advLobs.map(l => (
-                    <option key={l.code} value={l.code}>{l.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-4">
-                {/* <label className="block text-xs text-gray-600 mb-1">Product Group</label> */}
-                <select
-                  value={advFilters.groupCode}
-                  onChange={e => setAdvFilters(f => ({ ...f, groupCode: e.target.value, categoryCode: '' }))}
-                  className="w-full h-10 px-3 py-2 pmsearch"
-                >
-                  <option value="">Product Group</option>
-                  {advGroups.map(g => (
-                    <option key={g.code} value={g.code}>{g.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-4">
-                {/* <label className="block text-xs text-gray-600 mb-1">Product Category</label> */}
-                <select
-                  value={advFilters.categoryCode}
-                  onChange={e => setAdvFilters(f => ({ ...f, categoryCode: e.target.value }))}
-                  className="w-full h-10 px-3 py-2 pmsearch"
-                >
-                  <option value="">Product Category</option>
-                  {advCategories.map(c => (
-                    <option key={c.code} value={c.code}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-1">
-                {/* <label className="block text-xs text-gray-600 mb-1">Active</label> */}
-                <select
-                  value={advFilters.active}
-                  onChange={e => setAdvFilters(f => ({ ...f, active: e.target.value }))}
-                  className="w-full h-10 px-3 py-2 pmsearch"
-                >
-                  <option value="">Active</option>
-                  <option value="Y">Y</option>
-                  <option value="N">N</option>
-                </select>
-              </div>
-              <div className="col-span-12">
-                <textarea
-                  value={advFilters.q}
-                  onChange={e => setAdvFilters(f => ({ ...f, q: e.target.value }))}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleApplyAdvanced(); } }}
-                  placeholder="Advanced Query"
-                  rows={2}
-                  className="w-full h-10 px-3 py-2 font-mono text-sm pmsearch"
-                />
-              </div>
+          isSearchDisabled={isBasicEmpty() && !hasAdvancedFilters()}
+          searchDisabledTitle="Enter PC code, description, or use advanced filters"
+          rightActions={<SearchActionButtons />}
+          advancedContent={
+            <div className="grid grid-cols-12 gap-4 items-center">
+              {/* LOB (3/12) */}
+              <select
+                value={advancedFilters.lob}
+                onChange={e => setAdvancedFilters(f => ({ ...f, lob: e.target.value, productGroup: '', productCategory: '' }))}
+                className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+                aria-label="Line of Business"
+              >
+                <option value="">LOB</option>
+                {lobs.map(l => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
+              </select>
+
+              {/* Product Group (3/12) — filtered by LOB when selected */}
+              <select
+                value={advancedFilters.productGroup}
+                onChange={e => setAdvancedFilters(f => ({ ...f, productGroup: e.target.value, productCategory: '' }))}
+                className="col-span-3 w-full h-10 px-3 py-2 pmsearch"
+                aria-label="Product Group"
+                title={advancedFilters.lob ? 'Filtered by LOB' : 'All product groups'}
+              >
+                <option value="">Product Group</option>
+                {filteredProductGroups.map(g => (
+                  <option key={g.code} value={g.code}>{g.label}</option>
+                ))}
+              </select>
+
+              {/* Product Category (4/12) — cascades from group */}
+              <select
+                value={advancedFilters.productCategory}
+                onChange={e => setAdvancedFilters(f => ({ ...f, productCategory: e.target.value }))}
+                className="col-span-4 w-full h-10 px-3 py-2 pmsearch"
+                aria-label="Product Category"
+                title={advancedFilters.productGroup ? 'Filtered by Product Group' : 'All categories'}
+              >
+                <option value="">Product Category</option>
+                {productCategories.map(c => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+
+              {/* Active (2/12) */}
+              <select
+                value={advancedFilters.active}
+                onChange={e => setAdvancedFilters(f => ({ ...f, active: e.target.value }))}
+                className="col-span-2 w-full h-10 px-3 py-2 pmsearch"
+                aria-label="Active"
+              >
+                <option value="">Active</option>
+                <option value="Y">Y</option>
+                <option value="N">N</option>
+              </select>
             </div>
           }
         >
@@ -585,9 +532,9 @@ useEffect(() => {
             value={filters.description}
             onChange={handleChange}
             onKeyDown={onKeyDownBasic}
-            className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+            className="col-span-9 w-full h-10 px-3 py-2 pmsearch"
           />
-        </SearchToolbar>
+        </SearchBarAdvanced>
       }
       paneHeader={
         <PaneHeader
@@ -601,7 +548,7 @@ useEffect(() => {
           data={tableRows}
           rowKey="code"
           storageKey={TABLE_STORAGE_KEY}
-          loading={loading || advLoading}
+          loading={loading}
           selectedRowKey={selectedCompCode}
           onRowClick={(row: any) => {
             setSelectedCompCode(String(row.code ?? ''));
@@ -622,7 +569,6 @@ useEffect(() => {
           }
         />
       }
-        paneFooter={paneFooter}
       />
     </div>
   );

@@ -3,8 +3,8 @@ import BrowserLayout from './shared/BrowserLayout';
 import DataTable from './shared/DataTable';
 import { useDataCache } from '../context/DataCacheContext';
 import SearchToolbar from './shared/SearchToolbar';
+import SearchActionButtons from './shared/SearchActionButtons';
 import PaneHeader from './shared/PaneHeader';
-import PaneActions from './shared/PaneActions';
 import { useBrowserData } from '../hooks/useBrowserData';
 import { resetTableColumns } from '../utils/tableStorage';
 import RowContextMenu from './shared/RowContextMenu';
@@ -421,7 +421,11 @@ export default function DisplayCategorySearch({
           </>
         }
         searchPanel={
-          <SearchToolbar onSearch={handleSearch} onClear={handleClear}>
+          <SearchToolbar
+            onSearch={handleSearch}
+            onClear={handleClear}
+            rightActions={<SearchActionButtons />}
+          >
             <input
               type="text"
               name="code"
@@ -438,7 +442,7 @@ export default function DisplayCategorySearch({
               value={filters.description}
               onChange={handleChange}
               onKeyDown={onKeyDownBasic}
-              className="col-span-7 w-full h-10 px-3 py-2 pmsearch"
+              className="col-span-9 w-full h-10 px-3 py-2 pmsearch"
             />
           </SearchToolbar>
         }
@@ -486,14 +490,6 @@ export default function DisplayCategorySearch({
               }
             />
           </div>
-        }
-        paneFooter={
-          <PaneActions
-            onNew={handleNew}
-            onClone={handleClone}
-            newLabel="New"
-            cloneLabel="Clone"
-          />
         }
       />
 
