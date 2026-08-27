@@ -1,3 +1,4 @@
+import React from 'react';
 import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledSelect from '../../../components/LabeledSelect';
 import LabeledDateInput from '../../../components/LabeledDateInput';

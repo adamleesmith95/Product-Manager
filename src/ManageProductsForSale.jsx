@@ -116,7 +116,7 @@ export default function ManageProductsForSale({ product, onClose }) {
     return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
   });
 
-  const [topTab, setTopTab] = useState('General');
+  const [topTab, setTopTab] = useState(() => tabForms['topTab'] ?? 'General');
 
   // Reset form when product changes
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function ManageProductsForSale({ product, onClose }) {
   }, [productKey]);
 
   // Persist active tab state
-  //useEffect(() => setTabForm('topTab',    topTab),    [topTab]);
+  useEffect(() => setTabForm('topTab', topTab), [topTab]);
 
 
     const update = (key, value) => {
@@ -217,7 +217,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
         </div>
       )}
       {(topTab === 'Accounting') && <AccountingTab form={form} update={update} productPhc={phc} />}
-      {(topTab === 'Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
+      {(topTab === 'Pricing' || topTab === 'Product Pricing') && <ProductPricingTab form={form} update={update} productPhc={phc} />}
       {(topTab === 'Properties') && <PropertiesTab form={form} update={update} />}
       {(topTab === 'LinkedPHC') && <LinkedProductsTab form={form} update={update} />}
       {(topTab === 'Comments') && <CommentsTab form={form} update={update} />}

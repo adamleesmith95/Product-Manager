@@ -3,7 +3,6 @@ import { useModalCachedFetch } from '../../../hooks/useModalCachedFetch';
 import LabeledSelect from '../../../components/LabeledSelect';
 import CheckRow from '../../../components/CheckRow';
 import useLookup from '../../../hooks/useLookup';
-import { useFormSeed, asBoolean} from '../../../hooks/useFormSeed';
 
 const EMPTY = {
   crmCustomerTypeCode: '', crmCustomerType: '',
@@ -67,45 +66,24 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
     !!productCode && isActive
   );
 
-/* Commented out 3/28/26 for the below
-  // ✅ CENTRALIZED FORM SEEDING
-  useFormSeed(data, update, [
-    { key: 'crmCustomerTypeCode', transform: v => String(v ?? '') },
-    { key: 'crmProductCategoryCode', transform: v => String(v ?? '') },
-    { key: 'crmProductCode', transform: v => String(v ?? '') },
-    { key: 'inventoryPoolCode', transform: v => String(v ?? '') },
-    { key: 'revenueStatisticCode', transform: v => String(v ?? '') },
-    { key: 'rosterCode', transform: v => String(v ?? '') },
-    { key: 'salesStatisticCode', transform: v => String(v ?? '') },
-    { key: 'deferralCalendarCode', transform: v => String(v ?? '') },
-    { key: 'customerPropertySetCode', transform: v => String(v ?? '') },
-    { key: 'revenueLocationOverrideCategoryCode', transform: v => String(v ?? '') },
-    { key: 'crmEvent', transform: v => v === 'Y' },
-    { key: 'onlineHotlist', transform: v => v === 'Y' },
-    { key: 'reportRevenue', transform: v => v === 'Y' },
-    { key: 'printAcademyLabels', transform: v => v === 'Y' },
-    { key: 'offlineFreeSell', transform: v => v === 'Y' },
-  ]);
-*/
-/* Added 3/28/26 */
-  useFormSeed(data, update, [
-    { key: 'crmCustomerTypeCode' },
-    { key: 'crmProductCategoryCode' },
-    { key: 'crmProductCode' },
-    { key: 'inventoryPoolCode' },
-    { key: 'revenueStatisticCode' },
-    { key: 'rosterCode' },
-    { key: 'salesStatisticCode' },
-    { key: 'deferralCalendarCode' },
-    { key: 'customerPropertySetCode' },
-    { key: 'revenueLocationOverrideCategoryCode' },
-    { key: 'crmEvent',           transform: asBoolean },
-    { key: 'onlineHotlist',      transform: asBoolean },
-    { key: 'reportRevenue',      transform: asBoolean },
-    { key: 'printAcademyLabels', transform: asBoolean },
-    { key: 'offlineFreeSell',    transform: asBoolean },
-  ]);
-  /* End of Added 3/28/26 */
+  useEffect(() => {
+  if (!data) return;
+  update('crmCustomerTypeCode',                 String(data.crmCustomerTypeCode ?? ''));
+  update('crmProductCategoryCode',              String(data.crmProductCategoryCode ?? ''));
+  update('crmProductCode',                      String(data.crmProductCode ?? ''));
+  update('inventoryPoolCode',                   String(data.inventoryPoolCode ?? ''));
+  update('revenueStatisticCode',                String(data.revenueStatisticCode ?? ''));
+  update('rosterCode',                          String(data.rosterCode ?? ''));
+  update('salesStatisticCode',                  String(data.salesStatisticCode ?? ''));
+  update('deferralCalendarCode',                String(data.deferralCalendarCode ?? ''));
+  update('customerPropertySetCode',             String(data.customerPropertySetCode ?? ''));
+  update('revenueLocationOverrideCategoryCode', String(data.revenueLocationOverrideCategoryCode ?? ''));
+  update('crmEvent',          data.crmEvent === 'Y');
+  update('onlineHotlist',     data.onlineHotlist === 'Y');
+  update('reportRevenue',     data.reportRevenue === 'Y');
+  update('printAcademyLabels',data.printAcademyLabels === 'Y');
+  update('offlineFreeSell',   data.offlineFreeSell === 'Y');
+}, [data]);
 
   const row = data ?? EMPTY;
 
@@ -118,8 +96,6 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
 
       {/* Left Column */}
       <div className="space-y-4 pc-label-col-addl-left">
-        <LabeledSelect
-          label="CRM Customer Type"
           options={crmCustomerTypes}
           {...bindSelect('crmCustomerType', crmCustomerTypes)} />
 
@@ -161,8 +137,6 @@ export default function PC_AdditionalTab({ productCode, isActive, form, update }
 
       {/* Right Column */}
       <div className="space-y-4 pc-label-col-addl-right">
-        <LabeledSelect
-          label="Customer Property Set"
           options={customerPropertySets}
           {...bindSelect('customerPropertySet', customerPropertySets)} />
 
