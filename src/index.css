@@ -555,6 +555,28 @@ font-size: 13px; /* was 16px browser default — drops everything ~1 size */
   }
 }
 
+/* Compact "nested" modal panel — used for modals opened on top of another
+   already-open modal (e.g. "Modify" from a tab inside the PHC/PC modal).
+   Keeps essentially the same width as the primary PHC/PC modal (just ~10px
+   trimmed off each side) but crops the height down to the short
+   General/Additional tab content so there's no leftover whitespace below
+   the last row of fields. */
+.pcphc-modal-panel--nested {
+  width: min(1260px, 96vw);
+  height: min(640px, 82vh);
+  min-width: 360px;
+  min-height: 360px;
+  max-width: 96vw;
+  max-height: 82vh;
+}
+
+@media (max-width: 768px) {
+  .pcphc-modal-panel--nested {
+    width: 94vw;
+    height: 78vh;
+  }
+}
+
 /* Shared modal tab row */
 .pm-tab-row {
   display: flex;

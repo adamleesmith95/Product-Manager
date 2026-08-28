@@ -551,14 +551,18 @@ export default function ProductComponentsTab({ productPhc, onComponentsChanged }
         }
       />
 
-            {/* Compact PC detail modal — General + Additional tabs only */}
+            {/* Compact PC detail modal — General + Additional tabs only.
+          Rendered "nested" since it opens from a tab inside the PHC modal:
+          near-full width (just trimmed at the edges), offset, and drop-shadowed
+          so it visually cascades on top, with the bottom whitespace cropped. */}
       <Modal
         open={modifyDetail.open}
         onClose={() => setModifyDetail(s => ({ ...s, open: false }))}
         title={modifyDetail.code ? `Manage Product Component — ${modifyDetail.desc || 'Component'} (${modifyDetail.code})` : 'Manage Product Component'}
         headerClassName="pcphc-modal-header"
         titleClassName="pcphc-modal-title"
-        panelClassName="pcphc-modal-panel"
+        panelClassName="pcphc-modal-panel--nested"
+        nested
       >
         <ModalSessionProvider>
           <div className="pm-tab-host">

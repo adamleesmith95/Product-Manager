@@ -46,6 +46,16 @@ type ModalProps = {
   sizePreset?: 'standard' | 'entity';
   /** NEW: Custom panel class name */
   panelClassName?: string; // NEW
+
+  /**
+   * When true, renders this modal with a "cascaded on top of another modal"
+   * look: a lighter backdrop (so the modal underneath stays dimly visible),
+   * the panel offset up/left, and a stronger drop shadow. Use this for modals
+   * that are opened from within another already-open modal (e.g. "Modify"
+   * from a tab inside the PHC/PC modal), so it visually reads as a stacked
+   * window rather than a same-level replacement.
+   */
+  nested?: boolean;
 };
 
 type ModalSizePreset = 'standard' | 'entity';
@@ -71,6 +81,7 @@ export default function Modal({
 
   sizePreset = 'standard', // NEW
   panelClassName = '', // NEW
+  nested = false,
 }: ModalProps) {
   const containerEl =
     (containerId ? document.getElementById(containerId) : null) ||
@@ -125,7 +136,11 @@ export default function Modal({
 
   const content = (
     <div aria-modal="true" role="dialog" className={`${outerClass} flex items-center justify-center`}>
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <div
+        className={`absolute inset-0 ${nested ? 'bg-black/20' : 'bg-black/40'}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       <div
         ref={panelRef}
@@ -133,13 +148,15 @@ export default function Modal({
         className={
           isFull
             ? 'relative z-10 w-full h-full outline-none flex'
-            : `relative z-10 outline-none ${sizeClass} ${panelClassName}` // NEW
+            : `relative z-10 outline-none ${sizeClass} ${nested ? '-translate-y-4 -translate-x-2' : ''} ${panelClassName}` // NEW
         }
       >
         <div
           className={
             isFull
               ? 'bg-white shadow-xl border flex-1 flex flex-col overflow-hidden'
+              : nested
+              ? 'bg-white rounded border border-black/10 flex flex-col h-full overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.55)] ring-1 ring-black/10'
               : 'bg-white shadow-xl rounded border flex flex-col h-full overflow-hidden'
           }
         >
