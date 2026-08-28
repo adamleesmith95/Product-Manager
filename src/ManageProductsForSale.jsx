@@ -118,7 +118,9 @@ export default function ManageProductsForSale({ product, onClose }) {
     return (cached && cached.code === productKey) ? cached : initFormFromProduct(product);
   });
 
-  const [topTab, setTopTab] = useState(() => tabForms['topTab'] ?? 'General');
+  // Always start on the General (first) tab whenever this modal is opened,
+  // regardless of what tab was active last time it was closed.
+  const [topTab, setTopTab] = useState('General');
 
   // Reset form when product changes
   useEffect(() => {
@@ -129,9 +131,6 @@ export default function ManageProductsForSale({ product, onClose }) {
       setTabForm('general', fresh);
     }
   }, [productKey]);
-
-  // Persist active tab state
-  useEffect(() => setTabForm('topTab', topTab), [topTab]);
 
 
     const update = (key, value) => {

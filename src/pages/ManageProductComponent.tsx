@@ -92,6 +92,7 @@ export default function ManageProductComponent() {
     const description = String(
       row?.description ?? row?.productDescription ?? row?.label ?? row?.name ?? ''
     );
+    setActiveTab('general');
     setDetail({
       open: true,
       productCode: Number.isFinite(code) ? code : null,
