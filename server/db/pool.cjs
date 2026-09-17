@@ -21,6 +21,8 @@ function buildConfig(serverKey) {
       trustedConnection: true,
       encrypt: false,
       trustServerCertificate: true,
+      connectionTimeout: 5000,
+      requestTimeout: 5000,
     },
   };
 }
@@ -66,7 +68,7 @@ function getPool() {
 }
 
 function switchServer(serverKey) {
-  if (!SERVERS[serverKey]) throw new Error(`Unknown server key: ${serverKey}`);
+  if (!(serverKey in SERVERS)) throw new Error(`Unknown server key: ${serverKey}`);
 
   // Abandon the existing pool immediately (close in background, don't wait)
   const oldPromise = poolPromise;

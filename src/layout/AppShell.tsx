@@ -9,7 +9,7 @@ const DB_OPTIONS: { key: string; label: string }[] = [
   { key: 'gasher',  label: 'Gasher'  },
   { key: 'makalu',  label: 'Makalu'  },
   { key: 'manaslu', label: 'Manaslu' },
-  { key: 'cho-oyu', label: 'cho-oyu' },
+  { key: 'cho-oyu', label: '' },
 ];
 
 function GearIcon() {

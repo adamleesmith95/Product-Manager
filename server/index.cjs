@@ -37,7 +37,7 @@ app.get('/api/db-server', (_req, res) => {
 
 app.post('/api/db-server', (req, res) => {
   const { serverKey } = req.body;
-  if (!SERVERS[serverKey]) {
+  if (!(serverKey in SERVERS)) {
     return res.status(400).json({ error: `Unknown server key: ${serverKey}` });
   }
   try {
